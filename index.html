@@ -1377,7 +1377,7 @@
             {id: 135, name: "Apurva", sex: "Female", born: "", until: "", fatherId: 132, motherId: 133, imageId: ""}
         ];
         
-        console.log('🌳 Family Tree App v2.1.1 - Loaded');
+        console.log('🌳 Family Tree App v2.1.2 - Loaded');
         console.log('📊 Initial family data count:', familyData.length);
         
         let personMap = {};
@@ -2202,7 +2202,7 @@ return `
             maxDepth = 2;
             currentZoom = 0.75; // Reset to default 75% zoom
             updateZoom();
-            displayPeopleList();
+            filterPeople();
             renderTree();
         }
         
@@ -2535,7 +2535,7 @@ return `
             
             alert('Changes saved!');
             refreshPeopleList();
-            displayPeopleList(); // Update the main sidebar list
+            filterPeople(); // Update the main sidebar list
             renderTree(); // Redraw the tree
         }
         
@@ -2821,7 +2821,7 @@ return `
                     document.getElementById('sheetsStatus').innerHTML = `✅ Loaded ${data.length} people from Google Sheets!`;
                     
                     refreshPeopleList();
-                    displayPeopleList();
+                    filterPeople(); // Refresh sidebar with new data
                     renderTree();
                     
                     setTimeout(() => {
@@ -2961,7 +2961,7 @@ return `
     </script>
     
     <!-- Version Info -->
-    <div class="version-info">v2.1.1 - 2025-02-12</div>
+    <div class="version-info">v2.1.2 - 2025-02-12</div>
     
     <!-- Data Manager Modal -->
     <div class="data-manager-modal" id="dataManagerModal">
