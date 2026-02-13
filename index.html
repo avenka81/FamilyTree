@@ -1225,7 +1225,7 @@
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
-        const familyData = [
+        let familyData = [
             {id: 1, name: "Ramaswamy", sex: "Male", born: "1825", until: "", spouseId: 2, imageId: ""},
             {id: 2, name: "Meenakshy", sex: "Female", born: "1835", until: "", spouseId: 1, imageId: ""},
             {id: 3, name: "Seshadri", sex: "Male", born: "1865", until: "", spouseId: 4, fatherId: 1, motherId: 2, imageId: ""},
@@ -2738,21 +2738,28 @@ return `
             
             document.getElementById('sheetsStatus').innerHTML = '⏳ Loading from Google Sheets...';
             
-            // Use the public CSV export URL
-            const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv`;
+            // Use the public CSV export URL with gid=0 for first sheet
+            const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=0`;
             
-            fetch(csvUrl)
+            fetch(csvUrl, {
+                mode: 'cors',
+                headers: {
+                    'Accept': 'text/csv'
+                }
+            })
                 .then(response => {
                     if (!response.ok) {
-                        throw new Error('Failed to fetch sheet. Make sure it is shared as "Anyone with the link can view"');
+                        throw new Error(`HTTP ${response.status}: Make sure the sheet is shared as "Anyone with the link can view"`);
                     }
                     return response.text();
                 })
                 .then(csvData => {
+                    console.log('CSV Data received:', csvData.substring(0, 200)); // Debug
+                    
                     const data = parseGoogleSheetCSV(csvData);
                     
                     if (!data || data.length === 0) {
-                        throw new Error('No data found in sheet');
+                        throw new Error('No valid data found in sheet. Check that column order matches: Person ID, Person Name, Sex, Born, Until, Spouse ID, Spouse Name, Father ID, Father\'s Name, Mother ID, Mother\'s Name, Image ID, Group ID');
                     }
                     
                     // Update the family data
@@ -2768,11 +2775,14 @@ return `
                     
                     setTimeout(() => {
                         document.getElementById('sheetsStatus').innerHTML = '';
-                    }, 3000);
+                    }, 5000);
                 })
                 .catch(error => {
                     document.getElementById('sheetsStatus').innerHTML = `❌ Error: ${error.message}`;
                     console.error('Sheet load error:', error);
+                    
+                    // Show helpful troubleshooting
+                    alert(`Failed to load from Google Sheets.\n\nTroubleshooting:\n1. Make sure sheet is shared as "Anyone with the link can view"\n2. Check that the URL is correct\n3. Verify the sheet has data in the correct format\n\nError: ${error.message}`);
                 });
         }
         
