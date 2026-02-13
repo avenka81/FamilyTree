@@ -1377,7 +1377,7 @@
             {id: 135, name: "Apurva", sex: "Female", born: "", until: "", fatherId: 132, motherId: 133, imageId: ""}
         ];
         
-        console.log('🌳 Family Tree App v2.1.2 - Loaded');
+        console.log('🌳 Family Tree App v2.3.0 - Loaded');
         console.log('📊 Initial family data count:', familyData.length);
         
         let personMap = {};
@@ -2605,7 +2605,11 @@ return `
         function exportForGoogleSheets() {
             // Create CSV with ORIGINAL 13-column format to match the source data
             const headers = ['Person ID', 'Person Name', 'Sex', 'Born', 'Until', 'Spouse ID', 'Spouse Name', 'Father ID', "Father's Name", 'Mother ID', "Mother's Name", 'Image ID', 'Group ID'];
-            const rows = familyData.map(p => {
+            
+            // Sort by Person ID before exporting
+            const sortedData = [...familyData].sort((a, b) => a.id - b.id);
+            
+            const rows = sortedData.map(p => {
                 const spouse = p.spouseId ? personMap[p.spouseId] : null;
                 const father = p.fatherId ? personMap[p.fatherId] : null;
                 const mother = p.motherId ? personMap[p.motherId] : null;
@@ -2951,17 +2955,98 @@ return `
             alert('To save to Google Sheets:\n\n1. Export using "Export for Sheets" button\n2. In your Google Sheet, select all data\n3. Delete it\n4. File → Import → Upload the new CSV\n5. Choose "Replace current sheet"\n\nNote: Direct write access requires Google Sheets API setup, which we can add later if needed!');
         }
         
+        function exportUpdatedHTML() {
+            // Get the current HTML
+            let htmlContent = document.documentElement.outerHTML;
+            
+            // Sort data by ID for consistency
+            const sortedData = [...familyData].sort((a, b) => a.id - b.id);
+            
+            // Convert familyData to formatted JSON
+            const dataJSON = JSON.stringify(sortedData, null, 12); // 12 spaces for indentation
+            
+            // Find and replace the familyData array in the HTML
+            const dataStartMarker = 'let familyData = [';
+            const dataEndMarker = '        ];';
+            
+            const startIndex = htmlContent.indexOf(dataStartMarker);
+            if (startIndex === -1) {
+                alert('Error: Could not find data section in HTML');
+                return;
+            }
+            
+            const endIndex = htmlContent.indexOf(dataEndMarker, startIndex);
+            if (endIndex === -1) {
+                alert('Error: Could not find end of data section');
+                return;
+            }
+            
+            // Replace the data section
+            const beforeData = htmlContent.substring(0, startIndex + dataStartMarker.length);
+            const afterData = htmlContent.substring(endIndex);
+            
+            // Format the JSON data array properly
+            const formattedData = '\n' + dataJSON.substring(1, dataJSON.length - 1); // Remove outer brackets
+            
+            const newHTML = beforeData + formattedData + '\n        ' + afterData;
+            
+            // Download the file
+            const blob = new Blob([newHTML], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'family_tree_updated.html';
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            alert('Updated HTML file downloaded!\n\nThis file has your current data baked in.\nUpload it to GitHub to replace the old version.');
+        }
+        
         // Load saved Google Sheet URL on page load
-        window.addEventListener('DOMContentLoaded', () => {
+        // Auto-load data from project file on startup
+        window.addEventListener('DOMContentLoaded', async () => {
             const savedUrl = localStorage.getItem('googleSheetUrl');
             if (savedUrl) {
                 document.getElementById('googleSheetUrl').value = savedUrl;
+            }
+            
+            // Try to load from project CSV file
+            console.log('🔄 Attempting to load data from project file...');
+            try {
+                const response = await fetch('family_tree_for_google_sheets.csv');
+                if (response.ok) {
+                    const csvData = await response.text();
+                    const data = parseGoogleSheetCSV(csvData);
+                    
+                    if (data && data.length > 0) {
+                        console.log('✅ Loaded', data.length, 'people from project CSV file');
+                        familyData = data;
+                        personMap = {};
+                        familyData.forEach(p => personMap[p.id] = p);
+                        
+                        // Recalculate generations
+                        familyData.forEach(p => {
+                            p.generation = calculateGeneration(p);
+                        });
+                        
+                        // Update UI
+                        populateGenerationFilter();
+                        filterPeople();
+                        renderTree();
+                    } else {
+                        console.log('⚠️ Project CSV file empty or invalid, using hardcoded data');
+                    }
+                } else {
+                    console.log('ℹ️ Project CSV file not found, using hardcoded data');
+                }
+            } catch (error) {
+                console.log('ℹ️ Could not load project CSV file, using hardcoded data:', error.message);
             }
         });
     </script>
     
     <!-- Version Info -->
-    <div class="version-info">v2.1.2 - 2025-02-12</div>
+    <div class="version-info">v2.3.0 - 2025-02-12</div>
     
     <!-- Data Manager Modal -->
     <div class="data-manager-modal" id="dataManagerModal">
@@ -3155,6 +3240,14 @@ return `
                             <button class="action-btn" onclick="exportCSV()">📊 Download CSV</button>
                             <button class="action-btn secondary" onclick="copyToClipboard()">📋 Copy JSON</button>
                         </div>
+                        <div class="data-actions" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(212, 175, 55, 0.2);">
+                            <button class="action-btn" onclick="exportUpdatedHTML()" style="background: linear-gradient(135deg, #3498db, #2980b9); flex: 1;">
+                                🌐 Download Updated HTML File
+                            </button>
+                        </div>
+                        <p style="color: var(--gold-200); margin-top: 10px; font-size: 13px; opacity: 0.8;">
+                            💡 Downloads a new HTML file with current data baked in. Upload to GitHub to make changes permanent!
+                        </p>
                     </div>
                 </div>
             </div>
