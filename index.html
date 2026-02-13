@@ -1377,7 +1377,7 @@
             {id: 135, name: "Apurva", sex: "Female", born: "", until: "", fatherId: 132, motherId: 133, imageId: ""}
         ];
         
-        console.log('🌳 Family Tree App v2.0.9 - Loaded');
+        console.log('🌳 Family Tree App v2.1.1 - Loaded');
         console.log('📊 Initial family data count:', familyData.length);
         
         let personMap = {};
@@ -1895,7 +1895,7 @@
                 }
             });
             
-            // Find the root ancestor for the selected person or use first root
+            // Find the root ancestor for the selected person or use best root
             let startPerson = actualRoot || roots[0];
             if (!actualRoot && selectedPerson) {
                 // Traverse up to find the root ancestor
@@ -1907,6 +1907,21 @@
                 }
                 startPerson = current;
                 console.log('Starting from ancestor:', startPerson.name, 'ID:', startPerson.id);
+            } else if (!actualRoot && roots.length > 1) {
+                // Multiple roots - find the one with most descendants + oldest
+                const rootsWithInfo = roots.map(root => ({
+                    root,
+                    descendants: countDescendants(root.id),
+                    born: parseInt(root.born) || 9999
+                }));
+                
+                rootsWithInfo.sort((a, b) => {
+                    if (b.descendants !== a.descendants) return b.descendants - a.descendants;
+                    return a.born - b.born;
+                });
+                
+                startPerson = rootsWithInfo[0].root;
+                console.log('Multiple roots. Best:', startPerson.name, '-', rootsWithInfo[0].descendants, 'descendants, born', startPerson.born || '?');
             } else if (actualRoot) {
                 console.log('Starting from person who hid parents:', actualRoot.name);
             }
@@ -1914,6 +1929,16 @@
             const treeHTML = buildNode(startPerson, 0);
             console.log('Tree HTML generated, length:', treeHTML.length);
             container.innerHTML = `<div class="tree-root">${treeHTML}</div>`;
+        }
+        
+        function countDescendants(personId) {
+            let count = 0;
+            const children = getChildren(personId);
+            count += children.length;
+            children.forEach(child => {
+                count += countDescendants(child.id);
+            });
+            return count;
         }
         
         function toggleSection(personId, direction, event) {
@@ -2936,7 +2961,7 @@ return `
     </script>
     
     <!-- Version Info -->
-    <div class="version-info">v2.0.9 - 2025-02-12</div>
+    <div class="version-info">v2.1.1 - 2025-02-12</div>
     
     <!-- Data Manager Modal -->
     <div class="data-manager-modal" id="dataManagerModal">
