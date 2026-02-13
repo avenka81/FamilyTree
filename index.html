@@ -1377,10 +1377,10 @@
             {id: 135, name: "Apurva", sex: "Female", born: "", until: "", fatherId: 132, motherId: 133, imageId: ""}
         ];
         
-        console.log('🌳 Family Tree App v2.0.2 - Loaded');
+        console.log('🌳 Family Tree App v2.0.4 - Loaded');
         console.log('📊 Initial family data count:', familyData.length);
         
-        const personMap = {};
+        let personMap = {};
         familyData.forEach(p => personMap[p.id] = p);
         
         function calculateGeneration(person, visited = new Set()) {
@@ -2771,7 +2771,8 @@ return `
                     return response.text();
                 })
                 .then(csvData => {
-                    console.log('CSV Data received:', csvData.substring(0, 200)); // Debug
+                    console.log('✅ CSV Data received, length:', csvData.length);
+                    console.log('CSV preview:', csvData.substring(0, 200));
                     
                     const data = parseGoogleSheetCSV(csvData);
                     
@@ -2779,10 +2780,18 @@ return `
                         throw new Error('No valid data found in sheet. Check that column order matches: Person ID, Person Name, Sex, Born, Until, Spouse ID, Spouse Name, Father ID, Father\'s Name, Mother ID, Mother\'s Name, Image ID, Group ID');
                     }
                     
+                    console.log('📊 Parsed data count:', data.length);
+                    console.log('📊 About to assign familyData...');
+                    
                     // Update the family data
                     familyData = data;
+                    console.log('✅ familyData assigned successfully');
+                    
                     personMap = {};
+                    console.log('✅ personMap cleared');
+                    
                     familyData.forEach(p => personMap[p.id] = p);
+                    console.log('✅ personMap rebuilt with', Object.keys(personMap).length, 'people');
                     
                     document.getElementById('sheetsStatus').innerHTML = `✅ Loaded ${data.length} people from Google Sheets!`;
                     
@@ -2861,7 +2870,7 @@ return `
     </script>
     
     <!-- Version Info -->
-    <div class="version-info">v2.0.2 - 2025-02-12</div>
+    <div class="version-info">v2.0.4 - 2025-02-12</div>
     
     <!-- Data Manager Modal -->
     <div class="data-manager-modal" id="dataManagerModal">
