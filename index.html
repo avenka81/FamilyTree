@@ -1377,7 +1377,7 @@
             {id: 135, name: "Apurva", sex: "Female", born: "", until: "", fatherId: 132, motherId: 133, imageId: ""}
         ];
         
-        console.log('🌳 Family Tree App v2.0.6 - Loaded');
+        console.log('🌳 Family Tree App v2.0.9 - Loaded');
         console.log('📊 Initial family data count:', familyData.length);
         
         let personMap = {};
@@ -2578,7 +2578,7 @@ return `
         }
         
         function exportForGoogleSheets() {
-            // Create CSV with proper column headers for Google Sheets
+            // Create CSV with ORIGINAL 13-column format to match the source data
             const headers = ['Person ID', 'Person Name', 'Sex', 'Born', 'Until', 'Spouse ID', 'Spouse Name', 'Father ID', "Father's Name", 'Mother ID', "Mother's Name", 'Image ID', 'Group ID'];
             const rows = familyData.map(p => {
                 const spouse = p.spouseId ? personMap[p.spouseId] : null;
@@ -2586,19 +2586,19 @@ return `
                 const mother = p.motherId ? personMap[p.motherId] : null;
                 
                 return [
-                    p.id,
-                    p.name,
-                    p.sex,
-                    p.born || '',
-                    p.until || '',
-                    p.spouseId || '',
-                    spouse ? spouse.name : '',
-                    p.fatherId || '',
-                    father ? father.name : '',
-                    p.motherId || '',
-                    mother ? mother.name : '',
-                    p.imageId || '',
-                    'G' + p.id + (p.spouseId || '')  // Group ID
+                    p.id,                                    // Column 0: Person ID
+                    p.name,                                  // Column 1: Person Name
+                    p.sex,                                   // Column 2: Sex
+                    p.born || '',                            // Column 3: Born
+                    p.until || '',                           // Column 4: Until
+                    p.spouseId || '',                        // Column 5: Spouse ID
+                    spouse ? spouse.name : '',               // Column 6: Spouse Name
+                    p.fatherId || '',                        // Column 7: Father ID
+                    father ? father.name : '',               // Column 8: Father's Name
+                    p.motherId || '',                        // Column 9: Mother ID
+                    mother ? mother.name : '',               // Column 10: Mother's Name
+                    p.imageId || '',                         // Column 11: Image ID
+                    'G' + p.id + (p.spouseId || '')          // Column 12: Group ID
                 ];
             });
             
@@ -2617,7 +2617,7 @@ return `
             URL.revokeObjectURL(url);
             
             // Show instructions
-            alert('CSV downloaded!\n\nNext steps:\n1. Go to Google Sheets\n2. Create a new spreadsheet\n3. File → Import → Upload\n4. Upload this CSV file\n5. Share the sheet and copy the URL\n6. Come back here to connect it!');
+            alert('CSV downloaded!\n\nNext steps:\n1. Go to Google Sheets (or create new one)\n2. File → Import → Upload\n3. Upload this CSV file\n4. Choose "Replace spreadsheet" or "Replace current sheet"\n5. Share the sheet (Anyone with link can view)\n6. Copy the URL and paste it in the Import/Export tab!\n\nFormat: 13 columns matching original data structure.');
         }
         
         function copyToClipboard() {
@@ -2848,33 +2848,76 @@ return `
                 // Debug first person
                 if (index === 0) {
                     console.log('📋 First person values:', values);
-                    console.log('📋 Parsed first person:', {
-                        id: parseInt(values[0]),
-                        name: values[1],
-                        sex: values[2],
-                        spouseId: values[5],
-                        fatherId: values[6],
-                        motherId: values[7],
-                        imageId: values[8]
-                    });
+                    console.log('📋 Number of columns:', values.length);
+                    
+                    // Detect format based on column count
+                    if (values.length >= 13) {
+                        console.log('📋 Detected: ORIGINAL FORMAT (13 columns with names)');
+                        console.log('📋 Parsed first person:', {
+                            id: parseInt(values[0]),
+                            name: values[1],
+                            sex: values[2],
+                            spouseId: values[5],
+                            fatherId: values[7],
+                            motherId: values[9],
+                            imageId: values[11]
+                        });
+                    } else {
+                        console.log('📋 Detected: SIMPLIFIED FORMAT (9 columns without names)');
+                        console.log('📋 Parsed first person:', {
+                            id: parseInt(values[0]),
+                            name: values[1],
+                            sex: values[2],
+                            spouseId: values[5],
+                            fatherId: values[6],
+                            motherId: values[7],
+                            imageId: values[8]
+                        });
+                    }
                 }
                 
-                // Map to data structure - CORRECTED COLUMN INDICES
-                return {
-                    id: parseInt(values[0]) || 0,
-                    name: values[1] || '',
-                    sex: values[2] || 'Male',
-                    born: values[3] || '',
-                    until: values[4] || '',
-                    spouseId: values[5] ? parseInt(values[5]) : null,
-                    fatherId: values[6] ? parseInt(values[6]) : null,
-                    motherId: values[7] ? parseInt(values[7]) : null,
-                    imageId: values[8] || ''
-                };
+                // Map to data structure - support both formats
+                let personData;
+                if (values.length >= 13) {
+                    // ORIGINAL FORMAT: Person ID, Person Name, Sex, Born, Until, Spouse ID, Spouse Name, Father ID, Father's Name, Mother ID, Mother's Name, Image ID, Group ID
+                    personData = {
+                        id: parseInt(values[0]) || 0,
+                        name: values[1] || '',
+                        sex: values[2] || 'Male',
+                        born: values[3] || '',
+                        until: values[4] || '',
+                        spouseId: values[5] ? parseInt(values[5]) : null,
+                        fatherId: values[7] ? parseInt(values[7]) : null,
+                        motherId: values[9] ? parseInt(values[9]) : null,
+                        imageId: values[11] || ''
+                    };
+                } else {
+                    // SIMPLIFIED FORMAT: ID, Name, Sex, Born, Until, Spouse ID, Father ID, Mother ID, Image ID
+                    personData = {
+                        id: parseInt(values[0]) || 0,
+                        name: values[1] || '',
+                        sex: values[2] || 'Male',
+                        born: values[3] || '',
+                        until: values[4] || '',
+                        spouseId: values[5] ? parseInt(values[5]) : null,
+                        fatherId: values[6] ? parseInt(values[6]) : null,
+                        motherId: values[7] ? parseInt(values[7]) : null,
+                        imageId: values[8] || ''
+                    };
+                }
+                
+                return personData;
             }).filter(p => p.id > 0); // Filter out invalid rows
             
             console.log('📊 Total parsed people:', parsed.length);
-            console.log('📊 Sample parsed data (first 3):', parsed.slice(0, 3));
+            console.log('📊 Sample parsed data (first 5):');
+            parsed.slice(0, 5).forEach(p => {
+                console.log(`  - ID ${p.id}: ${p.name} | Father: ${p.fatherId || 'none'} | Mother: ${p.motherId || 'none'} | Spouse: ${p.spouseId || 'none'}`);
+            });
+            
+            // Count roots
+            const rootCount = parsed.filter(p => !p.fatherId && !p.motherId).length;
+            console.log('📊 People with no parents (roots):', rootCount);
             
             return parsed;
         }
@@ -2893,7 +2936,7 @@ return `
     </script>
     
     <!-- Version Info -->
-    <div class="version-info">v2.0.6 - 2025-02-12</div>
+    <div class="version-info">v2.0.9 - 2025-02-12</div>
     
     <!-- Data Manager Modal -->
     <div class="data-manager-modal" id="dataManagerModal">
