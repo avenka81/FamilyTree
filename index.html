@@ -222,6 +222,20 @@
                         repeating-linear-gradient(0deg, transparent, transparent 49px, rgba(212, 175, 55, 0.03) 49px, rgba(212, 175, 55, 0.03) 50px);
         }
         
+        .version-info {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: var(--gold-400);
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-size: 12px;
+            z-index: 1000;
+            border: 1px solid var(--gold-400);
+            font-family: monospace;
+        }
+        
         .tree-viewport {
             position: absolute;
             top: 0; left: 0;
@@ -1225,6 +1239,9 @@
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
+        console.log('🌳 Family Tree App v2.0.1 - Loaded');
+        console.log('📊 familyData is mutable:', typeof familyData);
+        
         let familyData = [
             {id: 1, name: "Ramaswamy", sex: "Male", born: "1825", until: "", spouseId: 2, imageId: ""},
             {id: 2, name: "Meenakshy", sex: "Female", born: "1835", until: "", spouseId: 1, imageId: ""},
@@ -2842,6 +2859,9 @@ return `
             }
         });
     </script>
+    
+    <!-- Version Info -->
+    <div class="version-info">v2.0.1 - 2025-02-12</div>
     
     <!-- Data Manager Modal -->
     <div class="data-manager-modal" id="dataManagerModal">
