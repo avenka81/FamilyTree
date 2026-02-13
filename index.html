@@ -1377,7 +1377,7 @@
             {id: 135, name: "Apurva", sex: "Female", born: "", until: "", fatherId: 132, motherId: 133, imageId: ""}
         ];
         
-        console.log('🌳 Family Tree App v2.0.4 - Loaded');
+        console.log('🌳 Family Tree App v2.0.5 - Loaded');
         console.log('📊 Initial family data count:', familyData.length);
         
         let personMap = {};
@@ -2816,8 +2816,12 @@ return `
             const lines = csv.split('\n').filter(line => line.trim());
             if (lines.length < 2) return [];
             
+            console.log('📋 Total lines in CSV:', lines.length);
+            console.log('📋 Header:', lines[0]);
+            console.log('📋 First data row:', lines[1]);
+            
             // Skip header row
-            return lines.slice(1).map(line => {
+            const parsed = lines.slice(1).map((line, index) => {
                 // Parse CSV properly (handle quotes)
                 const values = [];
                 let current = '';
@@ -2841,6 +2845,18 @@ return `
                 }
                 values.push(current.trim());
                 
+                // Debug first person
+                if (index === 0) {
+                    console.log('📋 First person values:', values);
+                    console.log('📋 Parsed first person:', {
+                        id: parseInt(values[0]),
+                        name: values[1],
+                        sex: values[2],
+                        fatherId: parseInt(values[7]),
+                        motherId: parseInt(values[9])
+                    });
+                }
+                
                 // Map to data structure
                 return {
                     id: parseInt(values[0]) || 0,
@@ -2854,6 +2870,11 @@ return `
                     imageId: values[11] || ''
                 };
             }).filter(p => p.id > 0); // Filter out invalid rows
+            
+            console.log('📊 Total parsed people:', parsed.length);
+            console.log('📊 Sample parsed data (first 3):', parsed.slice(0, 3));
+            
+            return parsed;
         }
         
         function saveToGoogleSheets() {
@@ -2870,7 +2891,7 @@ return `
     </script>
     
     <!-- Version Info -->
-    <div class="version-info">v2.0.4 - 2025-02-12</div>
+    <div class="version-info">v2.0.5 - 2025-02-12</div>
     
     <!-- Data Manager Modal -->
     <div class="data-manager-modal" id="dataManagerModal">
