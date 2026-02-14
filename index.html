@@ -2081,7 +2081,24 @@
             {id: 135, name: "Apurva", sex: "Female", born: "", until: "", fatherId: 132, motherId: 133, imageId: ""}
         ];
         
-        console.log('🌳 Family Tree App v5.2.1 - Loaded');
+        console.log('🌳 Family Tree App v5.2.2 - Loaded');
+        
+        // Mobile error handler
+        window.onerror = function(msg, url, lineNo, columnNo, error) {
+            console.error('❌ Global Error:', msg, 'at line', lineNo);
+            document.body.innerHTML = `
+                <div style="padding: 20px; background: #1a1a1a; color: #fff; font-family: monospace;">
+                    <h1 style="color: #ff6b6b;">Error Loading Family Tree</h1>
+                    <p><strong>Message:</strong> ${msg}</p>
+                    <p><strong>Line:</strong> ${lineNo}</p>
+                    <p><strong>Error:</strong> ${error}</p>
+                    <p style="margin-top: 20px; color: #ffd93d;">Please screenshot this and report to developer.</p>
+                </div>
+            `;
+            return false;
+        };
+        
+        try {
         console.log('📊 Initial family data count:', familyData.length);
         
         let personMap = {};
@@ -4391,10 +4408,23 @@ return `
                 console.log('ℹ️ Could not load project CSV file, using hardcoded data:', error.message);
             }
         });
+        
+        } catch (initError) {
+            console.error('❌ Initialization Error:', initError);
+            document.body.innerHTML = `
+                <div style="padding: 20px; background: #1a1a1a; color: #fff; font-family: monospace;">
+                    <h1 style="color: #ff6b6b;">Initialization Failed</h1>
+                    <p><strong>Error:</strong> ${initError.message}</p>
+                    <p><strong>Stack:</strong></p>
+                    <pre style="background: #000; padding: 10px; overflow: auto;">${initError.stack}</pre>
+                    <p style="margin-top: 20px; color: #ffd93d;">Please screenshot this and report to developer.</p>
+                </div>
+            `;
+        }
     </script>
     
     <!-- Version Info -->
-    <div class="version-info">v5.2.1 - 2025-02-12</div>
+    <div class="version-info">v5.2.2 - 2025-02-12</div>
     
     <!-- Data Manager Modal -->
     <div class="data-manager-modal" id="dataManagerModal" style="display: none; visibility: hidden; opacity: 0; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 200000;">
