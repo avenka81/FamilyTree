@@ -1890,7 +1890,7 @@
             {id: 135, name: "Apurva", sex: "Female", born: "", until: "", fatherId: 132, motherId: 133, imageId: ""}
         ];
         
-        console.log('🌳 Family Tree App v4.1.0 - Loaded');
+        console.log('🌳 Family Tree App v4.1.1 - Loaded');
         console.log('📊 Initial family data count:', familyData.length);
         
         let personMap = {};
@@ -2417,58 +2417,30 @@
             
             console.log('🔘 Toggle clicked for:', foldId, 'at generation:', generation);
             
+            // Find the children-container for this person
+            const childrenContainer = document.getElementById(foldId);
+            
+            if (!childrenContainer) {
+                console.log('⚠️ No children container found for:', foldId);
+                return;
+            }
+            
             // Check current state
             const isExpanded = toggle.classList.contains('expanded');
             
             if (isExpanded) {
-                // COLLAPSE: Hide all following rows with generation > current
-                console.log('📁 Collapsing - hiding children at generation >', generation);
-                
-                let nextNode = treeNode.nextElementSibling;
-                while (nextNode && nextNode.classList.contains('tree-node')) {
-                    const nextGen = parseInt(nextNode.getAttribute('data-generation'));
-                    
-                    if (nextGen <= generation) {
-                        // Stop when we reach same or earlier generation
-                        console.log('  ⏹️ Stopped at generation', nextGen);
-                        break;
-                    }
-                    
-                    // Hide this row
-                    nextNode.style.display = 'none';
-                    nextNode.classList.add('folded');
-                    console.log('  👻 Hidden:', nextNode.querySelector('.node-name')?.textContent, 'gen', nextGen);
-                    
-                    nextNode = nextNode.nextElementSibling;
-                }
+                // COLLAPSE: Hide the entire children container
+                console.log('📁 Collapsing children container');
+                childrenContainer.style.display = 'none';
                 
                 // Update toggle appearance
                 toggle.classList.remove('expanded');
                 toggle.classList.add('collapsed');
                 
             } else {
-                // EXPAND: Show all immediate children (generation = current + 1)
-                console.log('📂 Expanding - showing direct children');
-                
-                let nextNode = treeNode.nextElementSibling;
-                while (nextNode && nextNode.classList.contains('tree-node')) {
-                    const nextGen = parseInt(nextNode.getAttribute('data-generation'));
-                    
-                    if (nextGen <= generation) {
-                        // Stop when we reach same or earlier generation
-                        break;
-                    }
-                    
-                    if (nextGen === generation + 1) {
-                        // Show direct children only
-                        nextNode.style.display = 'block';
-                        nextNode.classList.remove('folded');
-                        console.log('  👁️ Shown:', nextNode.querySelector('.node-name')?.textContent, 'gen', nextGen);
-                    }
-                    // Don't show deeper descendants - they stay hidden
-                    
-                    nextNode = nextNode.nextElementSibling;
-                }
+                // EXPAND: Show the children container
+                console.log('📂 Expanding children container');
+                childrenContainer.style.display = 'block';
                 
                 // Update toggle appearance
                 toggle.classList.remove('collapsed');
@@ -2569,16 +2541,12 @@
                 toggle.classList.add('collapsed');
             });
             
-            // Hide all rows except generation 0
-            document.querySelectorAll('.tree-node').forEach(node => {
-                const gen = parseInt(node.getAttribute('data-generation'));
-                if (gen > 0) {
-                    node.style.display = 'none';
-                    node.classList.add('folded');
-                }
+            // Hide all children-containers
+            document.querySelectorAll('.children-container').forEach(container => {
+                container.style.display = 'none';
             });
             
-            console.log('📁 All collapsed - only generation 0 visible');
+            console.log('📁 All collapsed');
         }
         
         // Expand all children in vertical view
@@ -2589,13 +2557,12 @@
                 toggle.classList.add('expanded');
             });
             
-            // Show all rows
-            document.querySelectorAll('.tree-node').forEach(node => {
-                node.style.display = 'block';
-                node.classList.remove('folded');
+            // Show all children-containers
+            document.querySelectorAll('.children-container').forEach(container => {
+                container.style.display = 'block';
             });
             
-            console.log('📂 All expanded - all generations visible');
+            console.log('📂 All expanded');
         }
         
         // Mobile detection
@@ -4154,7 +4121,7 @@ return `
     </script>
     
     <!-- Version Info -->
-    <div class="version-info">v4.1.0 - 2025-02-12</div>
+    <div class="version-info">v4.1.1 - 2025-02-12</div>
     
     <!-- Data Manager Modal -->
     <div class="data-manager-modal" id="dataManagerModal" style="display: none; visibility: hidden; opacity: 0; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 200000;">
