@@ -2081,7 +2081,7 @@
             {id: 135, name: "Apurva", sex: "Female", born: "", until: "", fatherId: 132, motherId: 133, imageId: ""}
         ];
         
-        console.log('🌳 Family Tree App v5.2.5 - Loaded');
+        console.log('🌳 Family Tree App v5.3.0 - NO CSV - Loaded');
         
         // Debug mode - set to false for production
         const DEBUG_MODE = false;
@@ -4400,6 +4400,11 @@ return `
                 });
             }
             
+            // DISABLED: CSV loading to isolate mobile crash issue
+            // Using only hardcoded data for now
+            console.log('ℹ️ CSV loading disabled - using hardcoded data only');
+            
+            /*
             // Try to load from project CSV file
             console.log('🔄 Attempting to load data from project file...');
             try {
@@ -4431,6 +4436,7 @@ return `
             } catch (error) {
                 debug('ℹ️ Could not load project CSV file, using hardcoded data:', error.message);
             }
+            */
         });
         
         } catch (initError) {
@@ -4448,7 +4454,7 @@ return `
     </script>
     
     <!-- Version Info -->
-    <div class="version-info">v5.2.5 - 2025-02-12</div>
+    <div class="version-info">v5.3.0 - NO CSV - 2025-02-12</div>
     
     <!-- Data Manager Modal -->
     <div class="data-manager-modal" id="dataManagerModal" style="display: none; visibility: hidden; opacity: 0; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 200000;">
