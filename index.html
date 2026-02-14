@@ -1070,6 +1070,74 @@
                 right: 10px;
                 bottom: 70px;
             }
+            
+            /* MOBILE VERTICAL TREE LAYOUT */
+            .tree-scroll-content {
+                padding: 20px 15px;
+            }
+            
+            .tree-node {
+                display: block;
+                margin: 0;
+                padding: 0;
+                width: 100%;
+            }
+            
+            /* Indent based on generation */
+            .tree-node[data-generation="0"] { margin-left: 0; }
+            .tree-node[data-generation="1"] { margin-left: 20px; }
+            .tree-node[data-generation="2"] { margin-left: 40px; }
+            .tree-node[data-generation="3"] { margin-left: 60px; }
+            .tree-node[data-generation="4"] { margin-left: 80px; }
+            .tree-node[data-generation="5"] { margin-left: 100px; }
+            .tree-node[data-generation="6"] { margin-left: 120px; }
+            .tree-node[data-generation="7"] { margin-left: 140px; }
+            
+            /* Spouse pair container */
+            .spouse-pair {
+                display: flex;
+                gap: 10px;
+                margin-bottom: 15px;
+                align-items: flex-start;
+            }
+            
+            /* Single person container */
+            .single-person {
+                margin-bottom: 15px;
+            }
+            
+            /* Hide all connecting lines on mobile */
+            .tree-node::before,
+            .tree-node::after,
+            .node-card::before,
+            .spouse-connector,
+            .horizontal-bar {
+                display: none !important;
+            }
+            
+            /* Vertical connector from parent */
+            .has-parent-line::before {
+                content: '';
+                position: absolute;
+                left: -10px;
+                top: 50%;
+                width: 10px;
+                height: 2px;
+                background: var(--gold-500);
+                display: block !important;
+            }
+            
+            /* Card adjustments for mobile vertical */
+            .node-card {
+                margin: 0;
+                position: relative;
+            }
+            
+            /* Children container */
+            .children-container {
+                display: block;
+                margin-top: 10px;
+            }
         }
         
         /* Extra small mobile */
@@ -1628,7 +1696,7 @@
             {id: 135, name: "Apurva", sex: "Female", born: "", until: "", fatherId: 132, motherId: 133, imageId: ""}
         ];
         
-        console.log('🌳 Family Tree App v2.9.2 - Loaded');
+        console.log('🌳 Family Tree App v3.0.0 - Loaded');
         console.log('📊 Initial family data count:', familyData.length);
         
         let personMap = {};
@@ -2130,6 +2198,78 @@
             }, 200);
         }
         
+        // Mobile detection
+        function isMobileView() {
+            return window.innerWidth <= 768;
+        }
+        
+        // Mobile vertical tree renderer
+        function renderMobileTree(rootPerson) {
+            let html = '';
+            const rendered = new Set();
+            
+            function renderPersonMobile(person, generation = 0) {
+                if (!person || rendered.has(person.id)) return '';
+                rendered.add(person.id);
+                
+                let output = '';
+                const spouse = person.spouseId ? personMap[person.spouseId] : null;
+                const hasSpouse = spouse && !rendered.has(spouse.id);
+                
+                // Create person card HTML
+                const cardHtml = renderPersonCard(person, generation);
+                const spouseCardHtml = hasSpouse ? renderPersonCard(spouse, generation) : '';
+                
+                if (hasSpouse) {
+                    rendered.add(spouse.id);
+                    output += `<div class="tree-node" data-generation="${generation}">
+                        <div class="spouse-pair">
+                            ${cardHtml}
+                            ${spouseCardHtml}
+                        </div>`;
+                } else {
+                    output += `<div class="tree-node" data-generation="${generation}">
+                        <div class="single-person">${cardHtml}</div>`;
+                }
+                
+                // Render children
+                const children = familyData.filter(p => 
+                    (p.fatherId === person.id || p.motherId === person.id) &&
+                    !rendered.has(p.id)
+                );
+                
+                if (children.length > 0) {
+                    output += '<div class="children-container">';
+                    children.forEach(child => {
+                        output += renderPersonMobile(child, generation + 1);
+                    });
+                    output += '</div>';
+                }
+                
+                output += '</div>';
+                return output;
+            }
+            
+            function renderPersonCard(person, generation) {
+                const dirs = hiddenDirections.get(person.id) || {};
+                const selected = selectedPerson && selectedPerson.id === person.id;
+                const highlightClass = relationshipPath.has(person.id) ? 'highlighted' : '';
+                
+                const imgUrl = person.imageId ? `https://lh3.googleusercontent.com/d/${person.imageId}` : '';
+                const cardDates = person.born || person.until ? 
+                    `${person.born || '?'} - ${person.until || ''}` : '';
+                
+                return `<div class="node-card ${person.sex.toLowerCase()} ${selected ? 'selected' : ''} ${highlightClass} has-parent-line" 
+                             onclick="selectPerson(${person.id})" data-generation="${generation}">
+                    ${imgUrl ? `<img src="${imgUrl}" alt="${person.name}" class="node-image" onerror="this.style.display='none'">` : ''}
+                    <div class="node-name" title="${person.name}">${person.name}</div>
+                    ${cardDates ? `<div class="node-dates">${cardDates}</div>` : ''}
+                </div>`;
+            }
+            
+            return renderPersonMobile(rootPerson, 0);
+        }
+        
         function renderTree() {
             const container = document.getElementById('treeContainer');
             const roots = familyData.filter(p => !p.fatherId && !p.motherId);
@@ -2178,6 +2318,14 @@
                 console.log('Multiple roots. Best:', startPerson.name, '-', rootsWithInfo[0].descendants, 'descendants, born', startPerson.born || '?');
             } else if (actualRoot) {
                 console.log('Starting from person who hid parents:', actualRoot.name);
+            }
+            
+            // Use mobile renderer on small screens
+            if (isMobileView()) {
+                const mobileHTML = renderMobileTree(startPerson);
+                container.innerHTML = `<div class="tree-root mobile-vertical">${mobileHTML}</div>`;
+                console.log('Mobile vertical tree rendered');
+                return;
             }
             
             const treeHTML = buildNode(startPerson, 0);
@@ -2765,6 +2913,15 @@ return `
             if (savedTheme) {
                 applyTheme(savedTheme);
             }
+        });
+        
+        // Re-render tree on window resize (mobile <-> desktop)
+        let resizeTimeout;
+        window.addEventListener('resize', function() {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(function() {
+                renderTree();
+            }, 250);
         });
         
         function switchTab(tabName) {
@@ -3576,7 +3733,7 @@ return `
     </script>
     
     <!-- Version Info -->
-    <div class="version-info">v2.9.2 - 2025-02-12</div>
+    <div class="version-info">v3.0.0 - 2025-02-12</div>
     
     <!-- Data Manager Modal -->
     <div class="data-manager-modal" id="dataManagerModal" style="display: none; visibility: hidden; opacity: 0; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 200000;">
