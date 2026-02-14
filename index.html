@@ -1083,15 +1083,42 @@
                 width: 100%;
             }
             
-            /* Indent based on generation - restored */
-            .tree-node[data-generation="0"] { margin-left: 0; }
-            .tree-node[data-generation="1"] { margin-left: 20px; }
-            .tree-node[data-generation="2"] { margin-left: 40px; }
-            .tree-node[data-generation="3"] { margin-left: 60px; }
-            .tree-node[data-generation="4"] { margin-left: 80px; }
-            .tree-node[data-generation="5"] { margin-left: 100px; }
-            .tree-node[data-generation="6"] { margin-left: 120px; }
-            .tree-node[data-generation="7"] { margin-left: 140px; }
+            /* Remove margin-based indents - tree-node stays aligned left */
+            .tree-node[data-generation="0"],
+            .tree-node[data-generation="1"],
+            .tree-node[data-generation="2"],
+            .tree-node[data-generation="3"],
+            .tree-node[data-generation="4"],
+            .tree-node[data-generation="5"],
+            .tree-node[data-generation="6"],
+            .tree-node[data-generation="7"] { 
+                margin-left: 0;
+            }
+            
+            /* Indent based on generation using padding on the content */
+            .tree-node[data-generation="0"] .spouse-pair,
+            .tree-node[data-generation="0"] .single-person { padding-left: 0; }
+            
+            .tree-node[data-generation="1"] .spouse-pair,
+            .tree-node[data-generation="1"] .single-person { padding-left: 20px; }
+            
+            .tree-node[data-generation="2"] .spouse-pair,
+            .tree-node[data-generation="2"] .single-person { padding-left: 40px; }
+            
+            .tree-node[data-generation="3"] .spouse-pair,
+            .tree-node[data-generation="3"] .single-person { padding-left: 60px; }
+            
+            .tree-node[data-generation="4"] .spouse-pair,
+            .tree-node[data-generation="4"] .single-person { padding-left: 80px; }
+            
+            .tree-node[data-generation="5"] .spouse-pair,
+            .tree-node[data-generation="5"] .single-person { padding-left: 100px; }
+            
+            .tree-node[data-generation="6"] .spouse-pair,
+            .tree-node[data-generation="6"] .single-person { padding-left: 120px; }
+            
+            .tree-node[data-generation="7"] .spouse-pair,
+            .tree-node[data-generation="7"] .single-person { padding-left: 140px; }
             
             /* Spouse pair container */
             .spouse-pair {
@@ -1099,6 +1126,20 @@
                 gap: 10px;
                 margin-bottom: 15px;
                 align-items: flex-start;
+                position: relative;
+            }
+            
+            /* Heart symbol between spouses in mobile view */
+            .spouse-pair::after {
+                content: '♥';
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                transform: translate(-50%, -50%);
+                color: var(--gold-500);
+                font-size: 18px;
+                z-index: 5;
+                pointer-events: none;
             }
             
             /* Single person container */
@@ -1504,7 +1545,8 @@
         /* Toggle button - centered vertically on EVERY row */
         .fold-toggle {
             position: absolute;
-            left: -23px; /* Position on the left vertical line */
+            left: 0; /* Start from tree-node's left edge */
+            margin-left: -30px; /* Move left to the vertical line */
             top: 50%; /* Center vertically */
             transform: translateY(-50%); /* Perfect vertical centering */
             width: 18px;
@@ -1764,7 +1806,7 @@
             {id: 135, name: "Apurva", sex: "Female", born: "", until: "", fatherId: 132, motherId: 133, imageId: ""}
         ];
         
-        console.log('🌳 Family Tree App v3.2.2 - Loaded');
+        console.log('🌳 Family Tree App v3.2.3 - Loaded');
         console.log('📊 Initial family data count:', familyData.length);
         
         let personMap = {};
@@ -3920,7 +3962,7 @@ return `
     </script>
     
     <!-- Version Info -->
-    <div class="version-info">v3.2.2 - 2025-02-12</div>
+    <div class="version-info">v3.2.3 - 2025-02-12</div>
     
     <!-- Data Manager Modal -->
     <div class="data-manager-modal" id="dataManagerModal" style="display: none; visibility: hidden; opacity: 0; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 200000;">
