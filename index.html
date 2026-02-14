@@ -2081,7 +2081,7 @@
             {id: 135, name: "Apurva", sex: "Female", born: "", until: "", fatherId: 132, motherId: 133, imageId: ""}
         ];
         
-        console.log('🌳 Family Tree App v5.2.2 - Loaded');
+        console.log('🌳 Family Tree App v5.2.3 - Loaded');
         
         // Mobile error handler
         window.onerror = function(msg, url, lineNo, columnNo, error) {
@@ -2329,8 +2329,8 @@
             }
             
             cards.forEach(card => {
-                const name = card.querySelector('.node-name')?.textContent.toLowerCase() || '';
-                const dates = card.querySelector('.node-dates')?.textContent.toLowerCase() || '';
+                const name = card.querySelector('.node-name') ? card.querySelector('.node-name').textContent.toLowerCase() : '';
+                const dates = card.querySelector('.node-dates') ? card.querySelector('.node-dates').textContent.toLowerCase() : '';
                 
                 if (name.includes(query) || dates.includes(query)) {
                     card.style.display = '';
@@ -2692,18 +2692,18 @@
             
             toggles.forEach((toggle, index) => {
                 const treeNode = toggle.closest('.tree-node');
-                const generation = treeNode?.getAttribute('data-generation');
+                const generation = treeNode ? treeNode.getAttribute('data-generation') : null;
                 const personId = toggle.getAttribute('data-person-id');
                 const rect = toggle.getBoundingClientRect();
-                const nodeRect = treeNode?.getBoundingClientRect();
+                const nodeRect = treeNode ? treeNode.getBoundingClientRect() : null;
                 
                 console.log(`Toggle ${index + 1}:`, {
                     personId,
                     generation,
                     left: rect.left,
                     top: rect.top,
-                    nodeLeft: nodeRect?.left,
-                    nodeTop: nodeRect?.top,
+                    nodeLeft: nodeRect ? nodeRect.left : null,
+                    nodeTop: nodeRect ? nodeRect.top : null,
                     visible: rect.width > 0 && rect.height > 0
                 });
             });
@@ -2745,9 +2745,9 @@
                     console.log(`Generation ${gen}:`, {
                         nodes: nodes.length,
                         nodeMarginLeft: nodeStyles.marginLeft,
-                        contentPaddingLeft: contentStyles?.paddingLeft,
+                        contentPaddingLeft: contentStyles ? contentStyles.paddingLeft : null,
                         nodeRect: firstNode.getBoundingClientRect(),
-                        contentRect: content?.getBoundingClientRect()
+                        contentRect: content ? content.getBoundingClientRect() : null
                     });
                 }
             }
@@ -2786,7 +2786,7 @@
                 }
                 
                 const firstCard = cardWithImage || cards[0];
-                console.log('Debugging card:', firstCard.querySelector('.node-name')?.textContent);
+                console.log('Debugging card:', firstCard.querySelector('.node-name') ? firstCard.querySelector('.node-name').textContent : 'N/A');
                 
                 const cardStyles = window.getComputedStyle(firstCard);
                 const image = firstCard.querySelector('.node-image');
@@ -2882,7 +2882,7 @@
         
         // Mobile vertical tree renderer
         function renderMobileTree(rootPerson) {
-            console.log('📱 renderMobileTree called with:', rootPerson?.name || 'null');
+            console.log('📱 renderMobileTree called with:', rootPerson ? rootPerson.name : 'null');
             let html = '';
             const rendered = new Set();
             
@@ -3606,7 +3606,9 @@ return `
         function switchTab(tabName) {
             // Update tab buttons
             document.querySelectorAll('.data-tab').forEach(tab => tab.classList.remove('active'));
-            event?.target?.classList?.add('active');
+            if (event && event.target && event.target.classList) {
+                event.target.classList.add('active');
+            }
             
             // Update tab content
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
@@ -3659,7 +3661,7 @@ return `
                 if (person.born) details.push(`Born: ${person.born}`);
                 if (spouse) details.push(`Spouse: ${spouse.name}`);
                 if (father || mother) {
-                    const parents = [father?.name, mother?.name].filter(Boolean).join(' & ');
+                    const parents = [father ? father.name : null, mother ? mother.name : null].filter(Boolean).join(' & ');
                     details.push(`Parents: ${parents}`);
                 }
                 
@@ -4424,7 +4426,7 @@ return `
     </script>
     
     <!-- Version Info -->
-    <div class="version-info">v5.2.2 - 2025-02-12</div>
+    <div class="version-info">v5.2.3 - 2025-02-12</div>
     
     <!-- Data Manager Modal -->
     <div class="data-manager-modal" id="dataManagerModal" style="display: none; visibility: hidden; opacity: 0; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 200000;">
