@@ -70,23 +70,24 @@
         }
         
         .sidebar-header {
-            padding: 40px 32px 24px;
+            padding: 24px 20px 16px; /* Reduced padding */
             border-bottom: 1px solid rgba(212, 175, 55, 0.15);
             background: linear-gradient(to bottom, rgba(212, 175, 55, 0.05), transparent);
+            flex-shrink: 0; /* Don't shrink */
         }
         
         .app-title {
             font-family: 'Playfair Display', serif;
-            font-size: 32px;
+            font-size: 24px; /* Smaller */
             font-weight: 900;
             color: var(--gold-400);
-            margin-bottom: 6px;
+            margin-bottom: 4px;
             letter-spacing: -0.5px;
             text-shadow: 0 2px 8px rgba(212, 175, 55, 0.3);
         }
         
         .app-subtitle {
-            font-size: 14px;
+            font-size: 12px; /* Smaller */
             color: var(--gold-300);
             opacity: 0.8;
             letter-spacing: 2px;
@@ -94,8 +95,9 @@
         }
         
         .search-section {
-            padding: 24px 32px;
+            padding: 16px 20px; /* Reduced padding */
             border-bottom: 1px solid rgba(212, 175, 55, 0.1);
+            flex-shrink: 0; /* Don't shrink */
         }
         
         .search-box input {
@@ -133,10 +135,49 @@
         }
         .filters select:focus { outline: none; border-color: var(--gold-400); }
         
+        
+        .sidebar-controls {
+            padding: 12px;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.15);
+            background: rgba(0, 0, 0, 0.2);
+            display: grid;
+            grid-template-columns: 1fr; /* Single column instead of 2 */
+            gap: 6px;
+            flex-shrink: 0; /* Don't shrink */
+        }
+        
+        .sidebar-controls .control-btn {
+            width: 100%;
+            padding: 8px 10px; /* Smaller padding */
+            background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.08));
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            color: var(--gold-400);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 12px; /* Smaller font */
+            font-weight: 600;
+            text-align: center;
+        }
+        
+        .sidebar-controls .control-btn:hover {
+            background: linear-gradient(135deg, rgba(212, 175, 55, 0.25), rgba(212, 175, 55, 0.15));
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+        }
+        
+        .sidebar-controls .control-btn:active {
+            transform: translateY(0);
+        }
+        
         .person-list-container {
-            flex: 1;
-            overflow-y: auto;
+            flex: 1; /* Take remaining space */
+            overflow-y: auto; /* Scroll here, not on sidebar */
+            overflow-x: hidden;
             padding: 20px 32px;
+            -webkit-overflow-scrolling: touch; /* Smooth iOS scrolling */
+            overscroll-behavior: contain; /* Prevent scroll chaining */
+            min-height: 0; /* Important for flex children with overflow */
         }
         
         .person-item {
@@ -900,121 +941,141 @@
         ::-webkit-scrollbar-thumb { background: rgba(212, 175, 55, 0.3); border-radius: 5px; }
         ::-webkit-scrollbar-thumb:hover { background: rgba(212, 175, 55, 0.5); }
         
-        /* Responsive Design - Mobile First */
-        @media (max-width: 968px) {
-            .app { 
-                flex-direction: column; 
+        /* Collapsible Sidebar - ALL DEVICES */
+        .sidebar {
+            position: fixed;
+            left: -100%;
+            top: 0;
+            height: 100vh;
+            width: 380px;
+            max-width: 85vw;
+            z-index: 99999; /* Very high - always on top */
+            transition: left 0.3s ease;
+            overflow-y: auto; /* Sidebar itself can scroll */
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+            pointer-events: auto;
+            background: linear-gradient(180deg, rgba(42, 40, 28, 0.98) 0%, rgba(29, 27, 19, 1) 100%);
+            box-shadow: 4px 0 30px rgba(0, 0, 0, 0.8);
+            overscroll-behavior: contain; /* Prevent scroll chaining to tree */
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .sidebar.mobile-open {
+            left: 0;
+        }
+        
+        .mobile-sidebar-toggle {
+            display: block;
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            z-index: 100000; /* Highest - always clickable */
+            background: linear-gradient(135deg, var(--gold-400), var(--gold-500));
+            color: var(--bark-900);
+            border: none;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            transition: all 0.3s;
+            pointer-events: auto;
+        }
+        
+        .mobile-sidebar-toggle:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 16px rgba(212, 175, 55, 0.6);
+        }
+        
+        .mobile-sidebar-toggle:active {
+            transform: scale(0.95);
+        }
+        
+        .mobile-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 380px; /* Start AFTER sidebar width */
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 99998; /* Below sidebar but above tree */
+            pointer-events: auto;
+        }
+        
+        .mobile-overlay.active {
+            display: block;
+        }
+        
+        /* On smaller screens, overlay starts after actual sidebar width */
+        @media (max-width: 768px) {
+            .mobile-overlay {
+                left: 320px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .mobile-overlay {
+                left: 280px;
+            }
+        }
+        
+        /* Block tree interaction when sidebar is open */
+        .tree-canvas {
+            pointer-events: auto;
+            position: relative;
+        }
+        
+        body.sidebar-open .tree-canvas {
+            pointer-events: none; /* Disable tree interaction when sidebar is open */
+            touch-action: none; /* Block touch on tree */
+            user-select: none; /* Prevent text selection */
+        }
+        
+        body.sidebar-open .tree-canvas * {
+            pointer-events: none !important; /* Disable all children too */
+        }
+        
+        /* Tree canvas takes full width when sidebar is hidden */
+        .tree-canvas {
+            width: 100%;
+            margin-left: 0;
+        }
+        
+        /* Mobile optimizations */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 320px;
             }
             
-            .sidebar { 
-                width: 100%; 
-                max-height: 40vh; 
-                border-right: none; 
-                border-bottom: 2px solid rgba(212, 175, 55, 0.3); 
-                overflow-y: auto;
-            }
-            
-            .controls-bar {
-                flex-wrap: wrap;
-                gap: 8px;
-                padding: 12px;
-            }
-            
-            .control-btn {
-                font-size: 12px;
-                padding: 8px 12px;
-                flex: 1 1 auto;
-                min-width: 100px;
+            .sidebar-controls {
+                grid-template-columns: 1fr;
             }
             
             .zoom-controls {
                 right: 10px;
-                bottom: 60px;
+                bottom: 70px;
             }
-            
-            .zoom-btn {
-                width: 40px;
-                height: 40px;
-                font-size: 18px;
-            }
-            
-            .version-info {
-                bottom: 5px;
-                right: 5px;
-                font-size: 10px;
-                padding: 4px 8px;
-            }
-            
-            /* Hide sidebar on mobile by default, show toggle */
+        }
+        
+        /* Extra small mobile */
+        @media (max-width: 480px) {
             .sidebar {
-                position: fixed;
-                left: -100%;
-                top: 0;
-                height: 100vh;
-                max-height: 100vh;
-                width: 80%;
-                max-width: 300px;
-                z-index: 9999;
-                transition: left 0.3s ease;
-                border-right: 2px solid var(--gold-400);
-                border-bottom: none;
-            }
-            
-            .sidebar.mobile-open {
-                left: 0;
+                width: 280px;
             }
             
             .mobile-sidebar-toggle {
-                display: block;
-                position: fixed;
+                width: 45px;
+                height: 45px;
+                font-size: 20px;
                 top: 10px;
                 left: 10px;
-                z-index: 10000;
-                background: linear-gradient(135deg, var(--gold-400), var(--gold-500));
-                color: var(--bark-900);
-                border: none;
-                width: 50px;
-                height: 50px;
-                border-radius: 50%;
-                font-size: 24px;
-                cursor: pointer;
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-                transition: all 0.3s;
-            }
-            
-            .mobile-sidebar-toggle:active {
-                transform: scale(0.95);
-            }
-            
-            .mobile-overlay {
-                display: none;
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: rgba(0, 0, 0, 0.7);
-                z-index: 9998;
-            }
-            
-            .mobile-overlay.active {
-                display: block;
             }
         }
         
-        /* Desktop - hide mobile toggle */
-        @media (min-width: 969px) {
-            .mobile-sidebar-toggle {
-                display: none;
-            }
-            
-            .mobile-overlay {
-                display: none !important;
-            }
-        }
-        
-        /* Extra small mobile devices */
-        @media (max-width: 480px) {
             .node-card {
                 width: 200px;
                 min-height: 120px;
@@ -1054,16 +1115,22 @@
         
         /* Data Manager Modal */
         .data-manager-modal {
-            display: none;
+            display: none !important; /* Force hidden */
+            visibility: hidden !important; /* Double hidden */
+            opacity: 0 !important; /* Triple hidden */
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(0, 0, 0, 0.9);
-            z-index: 10000;
+            z-index: 200000; /* Way above sidebar and everything else */
             overflow: auto;
+            pointer-events: none; /* Can't interact when hidden */
         }
         
         .data-manager-modal.active {
-            display: flex;
+            display: flex !important; /* Override when active */
+            visibility: visible !important;
+            opacity: 1 !important;
+            pointer-events: auto; /* Can interact when active */
             align-items: flex-start;
             justify-content: center;
             padding: 20px;
@@ -1333,6 +1400,16 @@
                 <p class="app-subtitle">Family Explorer</p>
             </div>
             
+            <!-- Controls Section in Sidebar -->
+            <div class="sidebar-controls">
+                <button class="control-btn" onclick="resetView(); closeMobileSidebarIfNeeded();">Reset View</button>
+                <button class="control-btn" onclick="expandAll(); closeMobileSidebarIfNeeded();">Expand All</button>
+                <button class="control-btn" onclick="collapseAll(); closeMobileSidebarIfNeeded();">Collapse</button>
+                <button class="control-btn" onclick="toggleRelationshipMode(); closeMobileSidebarIfNeeded();" id="relationshipBtn">Find Relationship</button>
+                <button class="control-btn" onclick="openDataManager(); closeMobileSidebarIfNeeded();" id="dataManagerBtn">Data Manager</button>
+                <button class="control-btn" onclick="toggleDebugMode(); closeMobileSidebarIfNeeded();" id="debugBtn">Debug</button>
+            </div>
+            
             <div class="search-section">
                 <div class="search-box">
                     <input type="text" id="searchInput" placeholder="Search for a family member...">
@@ -1351,14 +1428,6 @@
         </div>
         
         <div class="tree-canvas">
-            <div class="controls-bar">
-                <button class="control-btn" onclick="resetView()">Reset View</button>
-                <button class="control-btn" onclick="expandAll()">Expand All</button>
-                <button class="control-btn" onclick="collapseAll()">Collapse</button>
-                <button class="control-btn" onclick="toggleRelationshipMode()" id="relationshipBtn">Find Relationship</button>
-                <button class="control-btn" onclick="toggleDebugMode()" id="debugBtn" title="Show/Hide Technical Info">Debug</button>
-                <button class="control-btn" onclick="openDataManager()" id="dataManagerBtn" title="Manage Family Data">📝 Data Manager</button>
-            </div>
             <div class="zoom-controls">
                 <button class="zoom-btn" onclick="zoomIn()" title="Zoom In">+</button>
                 <div class="zoom-level" id="zoomLevel">100%</div>
@@ -1530,7 +1599,7 @@
             {id: 135, name: "Apurva", sex: "Female", born: "", until: "", fatherId: 132, motherId: 133, imageId: ""}
         ];
         
-        console.log('🌳 Family Tree App v2.4.0 - Loaded');
+        console.log('🌳 Family Tree App v2.6.5 - Loaded');
         console.log('📊 Initial family data count:', familyData.length);
         
         let personMap = {};
@@ -1786,13 +1855,8 @@
         function selectPerson(personId) {
             const person = personMap[personId];
             
-            // Close mobile sidebar when selecting
-            if (window.innerWidth <= 968) {
-                const sidebar = document.getElementById('mobileSidebar');
-                const overlay = document.querySelector('.mobile-overlay');
-                sidebar.classList.remove('mobile-open');
-                overlay.classList.remove('active');
-            }
+            // Close sidebar when selecting
+            closeMobileSidebarIfNeeded();
             
             // Handle relationship mode
             if (relationshipMode) {
@@ -2360,9 +2424,27 @@ return `
         function toggleMobileSidebar() {
             const sidebar = document.getElementById('mobileSidebar');
             const overlay = document.querySelector('.mobile-overlay');
+            const isOpen = sidebar.classList.contains('mobile-open');
             
             sidebar.classList.toggle('mobile-open');
             overlay.classList.toggle('active');
+            
+            // Toggle body class to disable tree interaction
+            if (isOpen) {
+                document.body.classList.remove('sidebar-open');
+            } else {
+                document.body.classList.add('sidebar-open');
+            }
+        }
+        
+        function closeMobileSidebarIfNeeded() {
+            const sidebar = document.getElementById('mobileSidebar');
+            const overlay = document.querySelector('.mobile-overlay');
+            
+            // Close sidebar after action
+            sidebar.classList.remove('mobile-open');
+            overlay.classList.remove('active');
+            document.body.classList.remove('sidebar-open');
         }
         
         function resetView() {
@@ -2486,14 +2568,32 @@ return `
         let currentEditingPerson = null;
         
         function openDataManager() {
-            document.getElementById('dataManagerModal').classList.add('active');
+            console.log('🔓 openDataManager() called');
+            
+            // Close sidebar first to avoid overlap
+            closeMobileSidebarIfNeeded();
+            
+            const modal = document.getElementById('dataManagerModal');
+            modal.classList.add('active');
+            
+            // Override inline styles with important flag
+            modal.style.setProperty('display', 'flex', 'important');
+            modal.style.setProperty('visibility', 'visible', 'important');
+            modal.style.setProperty('opacity', '1', 'important');
+            
             switchTab('browse');
             refreshPeopleList();
             populateParentSpouseDropdowns();
         }
         
         function closeDataManager() {
-            document.getElementById('dataManagerModal').classList.remove('active');
+            console.log('🔒 closeDataManager() called');
+            const modal = document.getElementById('dataManagerModal');
+            modal.classList.remove('active');
+            // Restore hidden inline styles
+            modal.style.setProperty('display', 'none', 'important');
+            modal.style.setProperty('visibility', 'hidden', 'important');
+            modal.style.setProperty('opacity', '0', 'important');
             currentEditingPerson = null;
         }
         
@@ -3180,6 +3280,95 @@ return `
                 document.getElementById('googleSheetUrl').value = savedUrl;
             }
             
+            // DEBUG: Check if modal has active class on load
+            const modal = document.getElementById('dataManagerModal');
+            if (modal) {
+                console.log('📋 Data Manager modal state on load:', {
+                    hasActiveClass: modal.classList.contains('active'),
+                    display: window.getComputedStyle(modal).display,
+                    zIndex: window.getComputedStyle(modal).zIndex
+                });
+                
+                // Force remove active class if present
+                if (modal.classList.contains('active')) {
+                    console.warn('⚠️ Modal had active class on load! Removing...');
+                    modal.classList.remove('active');
+                }
+            }
+            
+            // DEBUG: Log all clicks to see what's being hit
+            document.addEventListener('click', function(e) {
+                const isSidebarOpen = document.body.classList.contains('sidebar-open');
+                console.log('🖱️ CLICK DEBUG:', {
+                    'Sidebar Open': isSidebarOpen,
+                    'Target': e.target.tagName,
+                    'Class': e.target.className,
+                    'Z-Index': window.getComputedStyle(e.target).zIndex,
+                    'Pointer Events': window.getComputedStyle(e.target).pointerEvents
+                });
+            }, true);
+            
+            // DEBUG: Log scroll events
+            window.addEventListener('scroll', function(e) {
+                const isSidebarOpen = document.body.classList.contains('sidebar-open');
+                if (isSidebarOpen) {
+                    console.log('📜 SCROLL while sidebar open - Target:', e.target.className);
+                }
+            }, true);
+            
+            // Complete event isolation for sidebar
+            const sidebar = document.getElementById('mobileSidebar');
+            const treeCanvas = document.querySelector('.tree-canvas');
+            
+            if (sidebar && treeCanvas) {
+                // Prevent scroll chaining from sidebar to tree
+                sidebar.addEventListener('wheel', function(e) {
+                    const isAtTop = sidebar.scrollTop === 0;
+                    const isAtBottom = sidebar.scrollTop + sidebar.clientHeight >= sidebar.scrollHeight;
+                    
+                    // If scrolling up at top, or down at bottom, prevent default to stop propagation
+                    if ((isAtTop && e.deltaY < 0) || (isAtBottom && e.deltaY > 0)) {
+                        e.preventDefault();
+                    }
+                    e.stopPropagation();
+                }, { passive: false });
+                
+                // Same for touch scroll
+                let startY = 0;
+                sidebar.addEventListener('touchstart', function(e) {
+                    startY = e.touches[0].pageY;
+                }, { passive: true });
+                
+                sidebar.addEventListener('touchmove', function(e) {
+                    const currentY = e.touches[0].pageY;
+                    const isAtTop = sidebar.scrollTop === 0;
+                    const isAtBottom = sidebar.scrollTop + sidebar.clientHeight >= sidebar.scrollHeight;
+                    
+                    const isScrollingUp = currentY > startY;
+                    const isScrollingDown = currentY < startY;
+                    
+                    if ((isAtTop && isScrollingUp) || (isAtBottom && isScrollingDown)) {
+                        e.preventDefault();
+                    }
+                    e.stopPropagation();
+                }, { passive: false });
+                
+                // Block ALL events on tree when sidebar is open
+                const blockTreeEvents = function(e) {
+                    if (document.body.classList.contains('sidebar-open')) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        e.stopImmediatePropagation();
+                        return false;
+                    }
+                };
+                
+                // Add to tree canvas with capture phase
+                ['click', 'touchstart', 'touchmove', 'touchend', 'wheel', 'scroll', 'mousedown', 'mousemove', 'mouseup'].forEach(eventType => {
+                    treeCanvas.addEventListener(eventType, blockTreeEvents, { capture: true, passive: false });
+                });
+            }
+            
             // Try to load from project CSV file
             console.log('🔄 Attempting to load data from project file...');
             try {
@@ -3216,10 +3405,10 @@ return `
     </script>
     
     <!-- Version Info -->
-    <div class="version-info">v2.4.0 - 2025-02-12</div>
+    <div class="version-info">v2.6.5 - 2025-02-12</div>
     
     <!-- Data Manager Modal -->
-    <div class="data-manager-modal" id="dataManagerModal">
+    <div class="data-manager-modal" id="dataManagerModal" style="display: none; visibility: hidden; opacity: 0; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 200000;">
         <div class="data-manager-content">
             <div class="data-manager-header">
                 <h2>📝 Family Data Manager</h2>
