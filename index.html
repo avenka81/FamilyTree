@@ -74,10 +74,23 @@
         }
         
         .sidebar-header {
-            padding: 24px 20px 16px; /* Reduced padding */
+            padding: 24px 20px 16px;
             border-bottom: 1px solid rgba(212, 175, 55, 0.15);
             background: linear-gradient(to bottom, rgba(212, 175, 55, 0.05), transparent);
-            flex-shrink: 0; /* Don't shrink */
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .sidebar-toggle-inside {
+            position: static !important;
+            margin: 0 !important;
+            flex-shrink: 0;
+        }
+        
+        .sidebar-title-group {
+            flex: 1;
         }
         
         .app-title {
@@ -91,7 +104,7 @@
         }
         
         .app-subtitle {
-            font-size: 12px; /* Smaller */
+            font-size: 12px;
             color: var(--gold-300);
             opacity: 0.8;
             letter-spacing: 2px;
@@ -265,10 +278,58 @@
         
         .tree-canvas {
             flex: 1;
+            display: flex;
+            flex-direction: column;
             overflow: hidden;
             position: relative;
             background: radial-gradient(circle at 50% 50%, rgba(212, 175, 55, 0.02) 0%, transparent 60%),
                         repeating-linear-gradient(0deg, transparent, transparent 49px, rgba(212, 175, 55, 0.03) 49px, rgba(212, 175, 55, 0.03) 50px);
+        }
+        
+        /* Main Search Bar */
+        .main-search-bar {
+            padding: 15px 20px;
+            background: linear-gradient(135deg, var(--bark-800) 0%, var(--bark-900) 100%);
+            border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+            flex-shrink: 0;
+            position: relative;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .main-search-bar .mobile-sidebar-toggle {
+            position: static;
+            margin: 0;
+            flex-shrink: 0;
+        }
+        
+        .main-search-bar input {
+            flex: 1;
+            max-width: 500px;
+            padding: 12px 20px;
+            background: rgba(248, 246, 240, 0.08);
+            border: 2px solid rgba(212, 175, 55, 0.3);
+            border-radius: 25px;
+            color: var(--parchment);
+            font-size: 16px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            transition: all 0.3s;
+            position: relative;
+            z-index: 10;
+        }
+        
+        .main-search-bar input:focus {
+            outline: none;
+            border-color: var(--gold-500);
+            background: rgba(248, 246, 240, 0.12);
+            box-shadow: 0 4px 12px rgba(212, 175, 55, 0.2);
+        }
+        
+        .main-search-bar input::placeholder {
+            color: var(--parchment);
+            opacity: 0.5;
         }
         
         .version-info {
@@ -286,10 +347,9 @@
         }
         
         .tree-viewport {
-            position: absolute;
-            top: 0; left: 0;
+            flex: 1;
+            position: relative;
             width: 100%;
-            height: 100%;
             overflow: auto;
             overflow-x: auto;
             overflow-y: auto;
@@ -300,7 +360,7 @@
         .tree-scroll-content {
             min-width: max-content;
             min-height: max-content;
-            padding: 80px;
+            padding: 20px 15px 20px 5px;
             display: inline-block;
             transform-origin: top left;
             transition: transform 0.3s ease;
@@ -694,13 +754,12 @@
         .spouse-pair::after {
             content: '♥';
             position: absolute;
+            left: -22px; /* Aligned with toggle button */
             top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: #e74c3c;
-            font-size: 14px;
-            z-index: 2;
-            text-shadow: 0 0 8px rgba(231, 76, 60, 0.8);
+            transform: translateY(calc(-50% + 15px)); /* Move down below toggle */
+            color: var(--gold-500);
+            font-size: 16px;
+            z-index: 5;
             pointer-events: none;
         }
         
@@ -993,9 +1052,9 @@
         .mobile-sidebar-toggle {
             display: block;
             position: fixed;
-            top: 15px;
+            top: 75px;
             left: 15px;
-            z-index: 100000; /* Highest - always clickable */
+            z-index: 100000;
             background: linear-gradient(135deg, var(--gold-400), var(--gold-500));
             color: var(--bark-900);
             border: none;
@@ -1085,9 +1144,6 @@
             }
             
             /* MOBILE VERTICAL TREE LAYOUT */
-            .tree-scroll-content {
-                padding: 20px 15px;
-            }
             
             .tree-node {
                 display: block;
@@ -1143,17 +1199,7 @@
             }
             
             /* Heart symbol next to toggle on the left line for spouse pairs */
-            .spouse-pair::after {
-                content: '♥';
-                position: absolute;
-                left: -8px; /* Right next to toggle (toggle is at -30px + 18px width = -12px end) */
-                top: 50%;
-                transform: translateY(-50%);
-                color: var(--gold-500);
-                font-size: 16px;
-                z-index: 5;
-                pointer-events: none;
-            }
+            
             
             /* Single person container */
             .single-person {
@@ -1556,6 +1602,11 @@
         .tree-node[data-generation="0"] .spouse-pair,
         .tree-node[data-generation="0"] .single-person { padding-left: 0; }
         
+        /* Fix toggle position for generation 0 - ensure it's centered on the card */
+        .tree-node[data-generation="0"] .fold-toggle {
+            top: 35px; /* Fixed position to match 70px card height */
+        }
+        
         .tree-node[data-generation="1"] .spouse-pair,
         .tree-node[data-generation="1"] .single-person { padding-left: 20px; }
         
@@ -1586,17 +1637,22 @@
             position: relative;
         }
         
-        /* Heart symbol next to toggle on the left line for spouse pairs */
+        /* Heart symbol below toggle on the left line for spouse pairs */
         .spouse-pair::after {
             content: '♥';
             position: absolute;
-            left: -8px;
+            left: -13px; /* Align with toggle CENTER (-22px + 9px = -13px, center of 18px toggle) */
             top: 50%;
-            transform: translateY(-50%);
+            transform: translate(-50%, calc(-50% + 22px)); /* Center horizontally, move down 22px to clear toggle */
             color: var(--gold-500);
             font-size: 16px;
             z-index: 5;
             pointer-events: none;
+        }
+        
+        /* Hide heart on root-level spouse pairs */
+        .tree-root > .spouse-pair::after {
+            display: none;
         }
         
         /* Single person container */
@@ -1781,7 +1837,7 @@
         .tree-root.mobile-vertical::before {
             content: '';
             position: absolute;
-            left: 15px;
+            left: 5px;
             top: 0;
             bottom: 0;
             width: 2px;
@@ -1793,7 +1849,7 @@
         .fold-toggle {
             position: absolute;
             left: 0; /* Start from tree-node's left edge */
-            margin-left: -30px; /* Move left to the vertical line */
+            margin-left: -22px; /* Move further left to avoid heart */
             top: 50%; /* Center vertically */
             transform: translateY(-50%); /* Perfect vertical centering */
             width: 18px;
@@ -1846,65 +1902,39 @@
 </head>
 <body>
     <!-- Mobile Sidebar Toggle -->
-    <button class="mobile-sidebar-toggle" onclick="toggleMobileSidebar()" aria-label="Toggle menu">☰</button>
     <div class="mobile-overlay" onclick="toggleMobileSidebar()"></div>
     
     <div class="app">
         <div class="sidebar" id="mobileSidebar">
             <div class="sidebar-header">
-                <h1 class="app-title">Heritage Tree</h1>
-                <p class="app-subtitle">Family Explorer</p>
+                <button class="mobile-sidebar-toggle sidebar-toggle-inside" onclick="toggleMobileSidebar()" aria-label="Close menu">☰</button>
+                <div class="sidebar-title-group">
+                    <h1 class="app-title">Heritage Tree</h1>
+                    <p class="app-subtitle">Family Explorer</p>
+                </div>
             </div>
             
             <!-- Controls Section in Sidebar -->
             <div class="sidebar-controls">
                 <button class="control-btn" onclick="resetView(); closeMobileSidebarIfNeeded();">Reset View</button>
-                <button class="control-btn" onclick="expandAll(); closeMobileSidebarIfNeeded();">Expand All</button>
-                <button class="control-btn" onclick="collapseAll(); closeMobileSidebarIfNeeded();">Collapse</button>
-                <button class="control-btn" onclick="toggleRelationshipMode(); closeMobileSidebarIfNeeded();" id="relationshipBtn">Find Relationship</button>
                 <button class="control-btn" onclick="openDataManager(); closeMobileSidebarIfNeeded();" id="dataManagerBtn">Data Manager</button>
-                <button class="control-btn" onclick="toggleDebugMode(); closeMobileSidebarIfNeeded();" id="debugBtn">Debug</button>
                 <button class="control-btn" onclick="openThemeSelector(); closeMobileSidebarIfNeeded();" id="themeBtn">Theme Selector</button>
             </div>
             
-            <div class="search-section">
-                <div class="search-box">
-                    <input type="text" id="searchInput" placeholder="Search for a family member...">
-                </div>
-                <div class="filters">
-                    <select id="generationFilter"><option value="">All Generations</option></select>
-                    <select id="genderFilter">
-                        <option value="">All</option>
-                        <option value="Male">Male</option>
-                        <option value="Female">Female</option>
-                    </select>
-                </div>
+            <div class="search-section" style="display: none;">
+                <!-- Search moved to main view -->
             </div>
             
-            <div class="person-list-container" id="personList"></div>
+            <div class="person-list-container" id="personList" style="display: none;"></div>
         </div>
         
         <div class="tree-canvas">
-            <div id="relationshipPanel" class="relationship-panel" style="display: none;">
-                <div class="relationship-header">
-                    <h3>Find Relationship</h3>
-                    <button class="close-btn" onclick="closeRelationshipMode()">✕</button>
-                </div>
-                <div class="relationship-content">
-                    <p class="relationship-instruction">Click on two people to see how they're related</p>
-                    <div class="selected-people">
-                        <div class="selected-person-box">
-                            <label>Person 1:</label>
-                            <div id="person1Name">Not selected</div>
-                        </div>
-                        <div class="selected-person-box">
-                            <label>Person 2:</label>
-                            <div id="person2Name">Not selected</div>
-                        </div>
-                    </div>
-                    <div id="relationshipResult" class="relationship-result"></div>
-                </div>
+            <!-- Search Bar with Hamburger -->
+            <div class="main-search-bar">
+                <button class="mobile-sidebar-toggle" onclick="toggleMobileSidebar()" aria-label="Toggle menu">☰</button>
+                <input type="text" id="mainSearchInput" placeholder="🔍 Search family members..." onkeyup="filterTreeBySearch(this.value)">
             </div>
+            
             <div class="tree-viewport" id="treeViewport">
                 <div class="tree-scroll-content" id="treeContainer"></div>
             </div>
@@ -2051,7 +2081,7 @@
             {id: 135, name: "Apurva", sex: "Female", born: "", until: "", fatherId: 132, motherId: 133, imageId: ""}
         ];
         
-        console.log('🌳 Family Tree App v4.5.5 - Loaded');
+        console.log('🌳 Family Tree App v5.2.1 - Loaded');
         console.log('📊 Initial family data count:', familyData.length);
         
         let personMap = {};
@@ -2267,6 +2297,33 @@
             });
         }
         
+        // Filter tree by search in main view
+        function filterTreeBySearch(searchText) {
+            const query = searchText.toLowerCase().trim();
+            const cards = document.querySelectorAll('.node-card');
+            
+            if (!query) {
+                // Show all cards if search is empty
+                cards.forEach(card => {
+                    card.style.display = '';
+                    card.style.opacity = '1';
+                });
+                return;
+            }
+            
+            cards.forEach(card => {
+                const name = card.querySelector('.node-name')?.textContent.toLowerCase() || '';
+                const dates = card.querySelector('.node-dates')?.textContent.toLowerCase() || '';
+                
+                if (name.includes(query) || dates.includes(query)) {
+                    card.style.display = '';
+                    card.style.opacity = '1';
+                } else {
+                    card.style.opacity = '0.2';
+                }
+            });
+        }
+        
         function filterPeople() {
             const search = document.getElementById('searchInput').value.toLowerCase();
             const genFilter = document.getElementById('generationFilter').value;
@@ -2284,6 +2341,8 @@
         
         function displayPeopleList() {
             const list = document.getElementById('personList');
+            if (!list) return; // Sidebar list removed
+            
             if (filteredPeople.length === 0) {
                 list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--gold-300);opacity:0.5;">No matches found</div>';
                 return;
@@ -3261,8 +3320,14 @@ return `
             expandedNodes.clear();
             hiddenDirections.clear(); // Clear all hidden junction directions
             maxDepth = 2;
-            filterPeople();
             renderTree();
+            
+            // Clear main search bar
+            const searchInput = document.getElementById('mainSearchInput');
+            if (searchInput) {
+                searchInput.value = '';
+                filterTreeBySearch('');
+            }
         }
         
         function expandAll() {
@@ -3334,11 +3399,6 @@ return `
             }
         }
         
-        document.getElementById('searchInput').addEventListener('input', filterPeople);
-        document.getElementById('generationFilter').addEventListener('change', filterPeople);
-        document.getElementById('genderFilter').addEventListener('change', filterPeople);
-        
-        populateGenerationFilter();
         displayPeopleList();
         renderTree();
         
@@ -4319,8 +4379,7 @@ return `
                         });
                         
                         // Update UI
-                        populateGenerationFilter();
-                        filterPeople();
+                        displayPeopleList();
                         renderTree();
                     } else {
                         console.log('⚠️ Project CSV file empty or invalid, using hardcoded data');
@@ -4335,7 +4394,7 @@ return `
     </script>
     
     <!-- Version Info -->
-    <div class="version-info">v4.5.5 - 2025-02-12</div>
+    <div class="version-info">v5.2.1 - 2025-02-12</div>
     
     <!-- Data Manager Modal -->
     <div class="data-manager-modal" id="dataManagerModal" style="display: none; visibility: hidden; opacity: 0; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 200000;">
