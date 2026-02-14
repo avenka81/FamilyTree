@@ -1941,6 +1941,7 @@
         </div>
     </div>
     
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
         let familyData = [
             {id: 1, name: "Ramaswamy", sex: "Male", born: "1825", until: "", spouseId: 2, imageId: ""},
@@ -2080,29 +2081,8 @@
             {id: 135, name: "Apurva", sex: "Female", born: "", until: "", fatherId: 132, motherId: 133, imageId: ""}
         ];
         
-        console.log('🌳 Family Tree App v5.3.1 - NO CSV/3JS - Loaded');
-        
-        // Debug mode - set to false for production
-        const DEBUG_MODE = false;
-        const debug = (...args) => { if (DEBUG_MODE) console.log(...args); };
-        
-        // Mobile error handler
-        window.onerror = function(msg, url, lineNo, columnNo, error) {
-            console.error('❌ Global Error:', msg, 'at line', lineNo);
-            document.body.innerHTML = `
-                <div style="padding: 20px; background: #1a1a1a; color: #fff; font-family: monospace;">
-                    <h1 style="color: #ff6b6b;">Error Loading Family Tree</h1>
-                    <p><strong>Message:</strong> ${msg}</p>
-                    <p><strong>Line:</strong> ${lineNo}</p>
-                    <p><strong>Error:</strong> ${error}</p>
-                    <p style="margin-top: 20px; color: #ffd93d;">Please screenshot this and report to developer.</p>
-                </div>
-            `;
-            return false;
-        };
-        
-        try {
-        debug('📊 Initial family data count:', familyData.length);
+        console.log('🌳 Family Tree App v5.2.1 - Loaded');
+        console.log('📊 Initial family data count:', familyData.length);
         
         let personMap = {};
         familyData.forEach(p => personMap[p.id] = p);
@@ -2119,13 +2099,7 @@
             return maxGen + 1;
         }
         
-        try {
-            familyData.forEach(p => p.generation = calculateGeneration(p));
-        } catch (error) {
-            console.error('❌ Generation calculation failed:', error.message);
-            // Fallback: set all to generation 1
-            familyData.forEach(p => p.generation = 1);
-        }
+        familyData.forEach(p => p.generation = calculateGeneration(p));
         
         function getChildren(personId) {
             return familyData.filter(p => p.fatherId == personId || p.motherId == personId);
@@ -2338,8 +2312,8 @@
             }
             
             cards.forEach(card => {
-                const name = card.querySelector('.node-name') ? card.querySelector('.node-name').textContent.toLowerCase() : '';
-                const dates = card.querySelector('.node-dates') ? card.querySelector('.node-dates').textContent.toLowerCase() : '';
+                const name = card.querySelector('.node-name')?.textContent.toLowerCase() || '';
+                const dates = card.querySelector('.node-dates')?.textContent.toLowerCase() || '';
                 
                 if (name.includes(query) || dates.includes(query)) {
                     card.style.display = '';
@@ -2387,14 +2361,14 @@
         }
         
         function selectPerson(personId) {
-            debug('👤 selectPerson called with ID:', personId);
+            console.log('👤 selectPerson called with ID:', personId);
             const person = personMap[personId];
             if (!person) {
                 console.warn('⚠️ Person not found:', personId);
                 return;
             }
             
-            debug('✅ Person found:', person.name);
+            console.log('✅ Person found:', person.name);
             
             // Close sidebar when selecting
             closeMobileSidebarIfNeeded();
@@ -2404,7 +2378,7 @@
         }
         
         function showPersonDetail(person) {
-            debug('📋 showPersonDetail called for:', person.name);
+            console.log('📋 showPersonDetail called for:', person.name);
             
             // Build detail HTML
             const imgUrl = person.imageId ? `https://lh3.googleusercontent.com/d/${person.imageId}` : '';
@@ -2482,18 +2456,18 @@
             
             html += `</div></div>`;
             
-            debug('🏗️ Modal HTML built, length:', html.length);
+            console.log('🏗️ Modal HTML built, length:', html.length);
             
             // Add to page
             let modal = document.getElementById('personDetailModal');
             if (!modal) {
-                debug('📦 Creating new modal element');
+                console.log('📦 Creating new modal element');
                 modal = document.createElement('div');
                 modal.id = 'personDetailModal';
                 modal.className = 'person-detail-modal';
                 document.body.appendChild(modal);
             } else {
-                debug('♻️ Reusing existing modal');
+                console.log('♻️ Reusing existing modal');
             }
             
             modal.innerHTML = html;
@@ -2502,9 +2476,9 @@
                 if (event.target === modal) closePersonDetail();
             };
             
-            debug('✅ Modal display set to:', modal.style.display);
-            debug('✅ Modal in DOM:', document.getElementById('personDetailModal') !== null);
-            debug('✅ Modal computed display:', window.getComputedStyle(modal).display);
+            console.log('✅ Modal display set to:', modal.style.display);
+            console.log('✅ Modal in DOM:', document.getElementById('personDetailModal') !== null);
+            console.log('✅ Modal computed display:', window.getComputedStyle(modal).display);
         }
         
         function closePersonDetail(event) {
@@ -2517,7 +2491,7 @@
             expandedNodes.clear();
             selectedPerson = null;
             
-            debug('Showing relationship tree for:', person1.name, 'and', person2.name);
+            console.log('Showing relationship tree for:', person1.name, 'and', person2.name);
             
             // Build the path from person to root
             function getAncestorPath(person) {
@@ -2537,8 +2511,8 @@
             const path1 = getAncestorPath(person1);
             const path2 = getAncestorPath(person2);
             
-            debug('Path 1:', path1.map(p => p.name));
-            debug('Path 2:', path2.map(p => p.name));
+            console.log('Path 1:', path1.map(p => p.name));
+            console.log('Path 2:', path2.map(p => p.name));
             
             // Find common ancestor
             let commonAncestor = null;
@@ -2557,7 +2531,7 @@
                 if (commonAncestor) break;
             }
             
-            debug('Common ancestor:', commonAncestor ? commonAncestor.name : 'None');
+            console.log('Common ancestor:', commonAncestor ? commonAncestor.name : 'None');
             
             if (commonAncestor) {
                 // Add the ENTIRE path from root down to both people
@@ -2612,8 +2586,8 @@
                     }
                 }
                 
-                debug('Expanded nodes:', Array.from(expandedNodes));
-                debug('Expanded nodes count:', expandedNodes.size);
+                console.log('Expanded nodes:', Array.from(expandedNodes));
+                console.log('Expanded nodes count:', expandedNodes.size);
             } else {
                 // No common ancestor found, show both full paths
                 path1.forEach(p => {
@@ -2647,7 +2621,7 @@
             btn.style.background = forceMobileLayout ? 
                 'linear-gradient(135deg, rgba(244, 162, 97, 0.3), rgba(244, 162, 97, 0.2))' : 
                 'linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.08))';
-            debug('🔄 Mobile layout toggled:', forceMobileLayout ? 'ON' : 'OFF');
+            console.log('🔄 Mobile layout toggled:', forceMobileLayout ? 'ON' : 'OFF');
             renderTree();
         }
         
@@ -2659,7 +2633,7 @@
             const treeNode = toggle.closest('.tree-node');
             const generation = parseInt(treeNode.getAttribute('data-generation'));
             
-            debug('🔘 Toggle clicked for:', foldId, 'at generation:', generation);
+            console.log('🔘 Toggle clicked for:', foldId, 'at generation:', generation);
             
             // Find the children-container for this person
             const childrenContainer = document.getElementById(foldId);
@@ -2683,7 +2657,7 @@
                 
             } else {
                 // EXPAND: Show the children container
-                debug('📂 Expanding children container');
+                console.log('📂 Expanding children container');
                 childrenContainer.style.display = 'block';
                 
                 // Update toggle appearance
@@ -2695,24 +2669,24 @@
         // DEBUG HELPER: Run debugToggles() in console to see all toggle positions
         window.debugToggles = function() {
             const toggles = document.querySelectorAll('.fold-toggle');
-            debug('=== TOGGLE DEBUG INFO ===');
-            debug('Total toggles found:', toggles.length);
-            debug('Total tree-nodes:', document.querySelectorAll('.tree-node').length);
+            console.log('=== TOGGLE DEBUG INFO ===');
+            console.log('Total toggles found:', toggles.length);
+            console.log('Total tree-nodes:', document.querySelectorAll('.tree-node').length);
             
             toggles.forEach((toggle, index) => {
                 const treeNode = toggle.closest('.tree-node');
-                const generation = treeNode ? treeNode.getAttribute('data-generation') : null;
+                const generation = treeNode?.getAttribute('data-generation');
                 const personId = toggle.getAttribute('data-person-id');
                 const rect = toggle.getBoundingClientRect();
-                const nodeRect = treeNode ? treeNode.getBoundingClientRect() : null;
+                const nodeRect = treeNode?.getBoundingClientRect();
                 
-                debug(`Toggle ${index + 1}:`, {
+                console.log(`Toggle ${index + 1}:`, {
                     personId,
                     generation,
                     left: rect.left,
                     top: rect.top,
-                    nodeLeft: nodeRect ? nodeRect.left : null,
-                    nodeTop: nodeRect ? nodeRect.top : null,
+                    nodeLeft: nodeRect?.left,
+                    nodeTop: nodeRect?.top,
                     visible: rect.width > 0 && rect.height > 0
                 });
             });
@@ -2728,16 +2702,16 @@
             if (nodesWithoutToggle.length > 0) {
                 console.warn('⚠️ Nodes WITHOUT toggles:', nodesWithoutToggle.length);
                 nodesWithoutToggle.forEach(node => {
-                    debug('  Missing toggle on generation:', node.getAttribute('data-generation'));
+                    console.log('  Missing toggle on generation:', node.getAttribute('data-generation'));
                 });
             }
             
-            debug('=== END DEBUG ===');
+            console.log('=== END DEBUG ===');
         };
         
         // DEBUG HELPER: Check padding and positioning
         window.debugLayout = function() {
-            debug('=== LAYOUT DEBUG ===');
+            console.log('=== LAYOUT DEBUG ===');
             
             // Check each generation
             for (let gen = 0; gen <= 3; gen++) {
@@ -2751,12 +2725,12 @@
                     const nodeStyles = window.getComputedStyle(firstNode);
                     const contentStyles = content ? window.getComputedStyle(content) : null;
                     
-                    debug(`Generation ${gen}:`, {
+                    console.log(`Generation ${gen}:`, {
                         nodes: nodes.length,
                         nodeMarginLeft: nodeStyles.marginLeft,
-                        contentPaddingLeft: contentStyles ? contentStyles.paddingLeft : null,
+                        contentPaddingLeft: contentStyles?.paddingLeft,
                         nodeRect: firstNode.getBoundingClientRect(),
-                        contentRect: content ? content.getBoundingClientRect() : null
+                        contentRect: content?.getBoundingClientRect()
                     });
                 }
             }
@@ -2766,7 +2740,7 @@
             if (spousePairs.length > 0) {
                 const firstPair = spousePairs[0];
                 const afterStyles = window.getComputedStyle(firstPair, '::after');
-                debug('Heart (::after) position:', {
+                console.log('Heart (::after) position:', {
                     left: afterStyles.left,
                     top: afterStyles.top,
                     transform: afterStyles.transform,
@@ -2774,15 +2748,15 @@
                 });
             }
             
-            debug('=== END LAYOUT DEBUG ===');
+            console.log('=== END LAYOUT DEBUG ===');
         };
         
         // DEBUG HELPER: Check card and image styles
         window.debugCards = function() {
-            debug('=== CARD DEBUG ===');
+            console.log('=== CARD DEBUG ===');
             
             const cards = document.querySelectorAll('.node-card');
-            debug('Total cards found:', cards.length);
+            console.log('Total cards found:', cards.length);
             
             if (cards.length > 0) {
                 // Find a card WITH an image
@@ -2795,7 +2769,7 @@
                 }
                 
                 const firstCard = cardWithImage || cards[0];
-                debug('Debugging card:', firstCard.querySelector('.node-name') ? firstCard.querySelector('.node-name').textContent : 'N/A');
+                console.log('Debugging card:', firstCard.querySelector('.node-name')?.textContent);
                 
                 const cardStyles = window.getComputedStyle(firstCard);
                 const image = firstCard.querySelector('.node-image');
@@ -2803,9 +2777,9 @@
                 const content = firstCard.querySelector('.node-content');
                 const contentStyles = content ? window.getComputedStyle(content) : null;
                 
-                debug('Has image?', !!image);
+                console.log('Has image?', !!image);
                 
-                debug('Card styles:', {
+                console.log('Card styles:', {
                     padding: cardStyles.padding,
                     paddingTop: cardStyles.paddingTop,
                     paddingLeft: cardStyles.paddingLeft,
@@ -2820,7 +2794,7 @@
                 });
                 
                 if (image) {
-                    debug('Image styles:', {
+                    console.log('Image styles:', {
                         width: imageStyles.width,
                         height: imageStyles.height,
                         minHeight: imageStyles.minHeight,
@@ -2839,17 +2813,17 @@
                 }
                 
                 if (content) {
-                    debug('Content styles:', {
+                    console.log('Content styles:', {
                         padding: contentStyles.padding,
                         flex: contentStyles.flex,
                         rect: content.getBoundingClientRect()
                     });
                 }
                 
-                debug('Card rect:', firstCard.getBoundingClientRect());
+                console.log('Card rect:', firstCard.getBoundingClientRect());
             }
             
-            debug('=== END CARD DEBUG ===');
+            console.log('=== END CARD DEBUG ===');
         };
         
         // Collapse all children in vertical view
@@ -2865,7 +2839,7 @@
                 container.style.display = 'none';
             });
             
-            debug('📁 All collapsed');
+            console.log('📁 All collapsed');
         }
         
         // Expand all children in vertical view
@@ -2881,7 +2855,7 @@
                 container.style.display = 'block';
             });
             
-            debug('📂 All expanded');
+            console.log('📂 All expanded');
         }
         
         // Mobile detection
@@ -2891,7 +2865,7 @@
         
         // Mobile vertical tree renderer
         function renderMobileTree(rootPerson) {
-            debug('📱 renderMobileTree called with:', rootPerson ? rootPerson.name : 'null');
+            console.log('📱 renderMobileTree called with:', rootPerson?.name || 'null');
             let html = '';
             const rendered = new Set();
             
@@ -2901,11 +2875,11 @@
                     return '';
                 }
                 if (rendered.has(person.id)) {
-                    debug('⏭️ Skipping already rendered:', person.name);
+                    console.log('⏭️ Skipping already rendered:', person.name);
                     return '';
                 }
                 rendered.add(person.id);
-                debug('✏️ Rendering:', person.name, 'at generation', generation);
+                console.log('✏️ Rendering:', person.name, 'at generation', generation);
                 
                 let output = '';
                 const spouse = person.spouseId ? personMap[person.spouseId] : null;
@@ -2916,8 +2890,8 @@
                 const spouseCardHtml = hasSpouse ? renderPersonCard(spouse, generation) : '';
                 
                 if (hasSpouse) {
-                    debug('💑 Rendering spouse pair:', person.name, '&', spouse.name);
-                    debug('   🔘 Adding toggle for person ID:', person.id, 'at generation:', generation);
+                    console.log('💑 Rendering spouse pair:', person.name, '&', spouse.name);
+                    console.log('   🔘 Adding toggle for person ID:', person.id, 'at generation:', generation);
                     rendered.add(spouse.id);
                     output += `<div class="tree-node" data-generation="${generation}">
                         <div class="fold-toggle expanded" data-person-id="${person.id}" onclick="toggleFold('fold-${person.id}', event)"></div>
@@ -2927,8 +2901,8 @@
                         </div>
                     </div>`;
                 } else {
-                    debug('👤 Rendering single person:', person.name);
-                    debug('   🔘 Adding toggle for person ID:', person.id, 'at generation:', generation);
+                    console.log('👤 Rendering single person:', person.name);
+                    console.log('   🔘 Adding toggle for person ID:', person.id, 'at generation:', generation);
                     output += `<div class="tree-node" data-generation="${generation}">
                         <div class="fold-toggle expanded" data-person-id="${person.id}" onclick="toggleFold('fold-${person.id}', event)"></div>
                         <div class="single-person">${cardHtml}</div>
@@ -2941,7 +2915,7 @@
                     !rendered.has(p.id)
                 );
                 
-                debug('👶 Children of', person.name, ':', children.length);
+                console.log('👶 Children of', person.name, ':', children.length);
                 
                 if (children.length > 0) {
                     const foldId = `fold-${person.id}`;
@@ -2975,8 +2949,8 @@
             }
             
             const result = renderPersonMobile(rootPerson, 0);
-            debug('📱 Mobile tree HTML length:', result.length, 'characters');
-            debug('📱 Total people rendered:', rendered.size);
+            console.log('📱 Mobile tree HTML length:', result.length, 'characters');
+            console.log('📱 Total people rendered:', rendered.size);
             return result;
         }
         
@@ -2984,7 +2958,7 @@
             const container = document.getElementById('treeContainer');
             const roots = familyData.filter(p => !p.fatherId && !p.motherId);
             
-            debug('Rendering tree, roots found:', roots.length);
+            console.log('Rendering tree, roots found:', roots.length);
             
             if (roots.length === 0) {
                 container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🌳</div><div class="empty-state-text">No Family Tree Data</div></div>';
@@ -3009,7 +2983,7 @@
                     current = parent;
                 }
                 selectedRoot = current;
-                debug('Selected person ancestor:', selectedRoot.name);
+                console.log('Selected person ancestor:', selectedRoot.name);
             }
             
             // Sort roots by descendant count, then by birth year
@@ -3027,9 +3001,9 @@
                 return a.born - b.born;
             });
             
-            debug('Roots with descendants:', rootsWithDescendants.length);
+            console.log('Roots with descendants:', rootsWithDescendants.length);
             rootsWithDescendants.forEach((r, i) => {
-                debug(`  ${i + 1}. ${r.root.name} - ${r.descendants} descendants, born ${r.root.born || '?'}`);
+                console.log(`  ${i + 1}. ${r.root.name} - ${r.descendants} descendants, born ${r.root.born || '?'}`);
             });
             
             // Build HTML for all root families
@@ -3047,7 +3021,7 @@
             });
             
             container.innerHTML = `<div class="tree-root mobile-vertical">${allTreesHTML}</div>`;
-            debug('✅ Rendered', rootsWithDescendants.length, 'family trees');
+            console.log('✅ Rendered', rootsWithDescendants.length, 'family trees');
         }
         
         function countDescendants(personId) {
@@ -3425,27 +3399,15 @@ return `
             }
         }
         
-        try {
-            displayPeopleList();
-            renderTree();
-        } catch (error) {
-            console.error('❌ Initial render failed:', error.message, error.stack);
-            document.body.innerHTML = `
-                <div style="padding: 20px; background: #1a1a1a; color: #fff; font-family: sans-serif;">
-                    <h1 style="color: #ff6b6b;">Failed to Render Family Tree</h1>
-                    <p><strong>Error:</strong> ${error.message}</p>
-                    <p><strong>Stack:</strong></p>
-                    <pre style="background: #000; padding: 10px; overflow: auto; font-size: 11px;">${error.stack}</pre>
-                </div>
-            `;
-        }
+        displayPeopleList();
+        renderTree();
         
         // ===== DATA MANAGER FUNCTIONS =====
         
         let currentEditingPerson = null;
         
         function openDataManager() {
-            debug('🔓 openDataManager() called');
+            console.log('🔓 openDataManager() called');
             
             // Close sidebar first to avoid overlap
             closeMobileSidebarIfNeeded();
@@ -3464,7 +3426,7 @@ return `
         }
         
         function closeDataManager() {
-            debug('🔒 closeDataManager() called');
+            console.log('🔒 closeDataManager() called');
             const modal = document.getElementById('dataManagerModal');
             modal.classList.remove('active');
             // Restore hidden inline styles
@@ -3627,9 +3589,7 @@ return `
         function switchTab(tabName) {
             // Update tab buttons
             document.querySelectorAll('.data-tab').forEach(tab => tab.classList.remove('active'));
-            if (event && event.target && event.target.classList) {
-                event.target.classList.add('active');
-            }
+            event?.target?.classList?.add('active');
             
             // Update tab content
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
@@ -3682,7 +3642,7 @@ return `
                 if (person.born) details.push(`Born: ${person.born}`);
                 if (spouse) details.push(`Spouse: ${spouse.name}`);
                 if (father || mother) {
-                    const parents = [father ? father.name : null, mother ? mother.name : null].filter(Boolean).join(' & ');
+                    const parents = [father?.name, mother?.name].filter(Boolean).join(' & ');
                     details.push(`Parents: ${parents}`);
                 }
                 
@@ -4099,7 +4059,7 @@ return `
                     return response.text();
                 })
                 .then(csvData => {
-                    debug('✅ CSV Data received, length:', csvData.length);
+                    console.log('✅ CSV Data received, length:', csvData.length);
                     console.log('CSV preview:', csvData.substring(0, 200));
                     
                     const data = parseGoogleSheetCSV(csvData);
@@ -4108,18 +4068,18 @@ return `
                         throw new Error('No valid data found in sheet. Check that column order matches: Person ID, Person Name, Sex, Born, Until, Spouse ID, Spouse Name, Father ID, Father\'s Name, Mother ID, Mother\'s Name, Image ID, Group ID');
                     }
                     
-                    debug('📊 Parsed data count:', data.length);
-                    debug('📊 About to assign familyData...');
+                    console.log('📊 Parsed data count:', data.length);
+                    console.log('📊 About to assign familyData...');
                     
                     // Update the family data
                     familyData = data;
-                    debug('✅ familyData assigned successfully');
+                    console.log('✅ familyData assigned successfully');
                     
                     personMap = {};
-                    debug('✅ personMap cleared');
+                    console.log('✅ personMap cleared');
                     
                     familyData.forEach(p => personMap[p.id] = p);
-                    debug('✅ personMap rebuilt with', Object.keys(personMap).length, 'people');
+                    console.log('✅ personMap rebuilt with', Object.keys(personMap).length, 'people');
                     
                     document.getElementById('sheetsStatus').innerHTML = `✅ Loaded ${data.length} people from Google Sheets!`;
                     
@@ -4144,9 +4104,9 @@ return `
             const lines = csv.split('\n').filter(line => line.trim());
             if (lines.length < 2) return [];
             
-            debug('📋 Total lines in CSV:', lines.length);
-            debug('📋 Header:', lines[0]);
-            debug('📋 First data row:', lines[1]);
+            console.log('📋 Total lines in CSV:', lines.length);
+            console.log('📋 Header:', lines[0]);
+            console.log('📋 First data row:', lines[1]);
             
             // Skip header row
             const parsed = lines.slice(1).map((line, index) => {
@@ -4175,13 +4135,13 @@ return `
                 
                 // Debug first person
                 if (index === 0) {
-                    debug('📋 First person values:', values);
-                    debug('📋 Number of columns:', values.length);
+                    console.log('📋 First person values:', values);
+                    console.log('📋 Number of columns:', values.length);
                     
                     // Detect format based on column count
                     if (values.length >= 13) {
-                        debug('📋 Detected: ORIGINAL FORMAT (13 columns with names)');
-                        debug('📋 Parsed first person:', {
+                        console.log('📋 Detected: ORIGINAL FORMAT (13 columns with names)');
+                        console.log('📋 Parsed first person:', {
                             id: parseInt(values[0]),
                             name: values[1],
                             sex: values[2],
@@ -4191,8 +4151,8 @@ return `
                             imageId: values[11]
                         });
                     } else {
-                        debug('📋 Detected: SIMPLIFIED FORMAT (9 columns without names)');
-                        debug('📋 Parsed first person:', {
+                        console.log('📋 Detected: SIMPLIFIED FORMAT (9 columns without names)');
+                        console.log('📋 Parsed first person:', {
                             id: parseInt(values[0]),
                             name: values[1],
                             sex: values[2],
@@ -4237,15 +4197,15 @@ return `
                 return personData;
             }).filter(p => p.id > 0); // Filter out invalid rows
             
-            debug('📊 Total parsed people:', parsed.length);
-            debug('📊 Sample parsed data (first 5):');
+            console.log('📊 Total parsed people:', parsed.length);
+            console.log('📊 Sample parsed data (first 5):');
             parsed.slice(0, 5).forEach(p => {
                 console.log(`  - ID ${p.id}: ${p.name} | Father: ${p.fatherId || 'none'} | Mother: ${p.motherId || 'none'} | Spouse: ${p.spouseId || 'none'}`);
             });
             
             // Count roots
             const rootCount = parsed.filter(p => !p.fatherId && !p.motherId).length;
-            debug('📊 People with no parents (roots):', rootCount);
+            console.log('📊 People with no parents (roots):', rootCount);
             
             return parsed;
         }
@@ -4312,7 +4272,7 @@ return `
             // DEBUG: Check if modal has active class on load
             const modal = document.getElementById('dataManagerModal');
             if (modal) {
-                debug('📋 Data Manager modal state on load:', {
+                console.log('📋 Data Manager modal state on load:', {
                     hasActiveClass: modal.classList.contains('active'),
                     display: window.getComputedStyle(modal).display,
                     zIndex: window.getComputedStyle(modal).zIndex
@@ -4328,7 +4288,7 @@ return `
             // DEBUG: Log all clicks to see what's being hit
             document.addEventListener('click', function(e) {
                 const isSidebarOpen = document.body.classList.contains('sidebar-open');
-                debug('🖱️ CLICK DEBUG:', {
+                console.log('🖱️ CLICK DEBUG:', {
                     'Sidebar Open': isSidebarOpen,
                     'Target': e.target.tagName,
                     'Class': e.target.className,
@@ -4341,7 +4301,7 @@ return `
             window.addEventListener('scroll', function(e) {
                 const isSidebarOpen = document.body.classList.contains('sidebar-open');
                 if (isSidebarOpen) {
-                    debug('📜 SCROLL while sidebar open - Target:', e.target.className);
+                    console.log('📜 SCROLL while sidebar open - Target:', e.target.className);
                 }
             }, true);
             
@@ -4399,11 +4359,6 @@ return `
                 });
             }
             
-            // DISABLED: CSV loading to isolate mobile crash issue
-            // Using only hardcoded data for now
-            console.log('ℹ️ CSV loading disabled - using hardcoded data only');
-            
-            /*
             // Try to load from project CSV file
             console.log('🔄 Attempting to load data from project file...');
             try {
@@ -4413,7 +4368,7 @@ return `
                     const data = parseGoogleSheetCSV(csvData);
                     
                     if (data && data.length > 0) {
-                        debug('✅ Loaded', data.length, 'people from project CSV file');
+                        console.log('✅ Loaded', data.length, 'people from project CSV file');
                         familyData = data;
                         personMap = {};
                         familyData.forEach(p => personMap[p.id] = p);
@@ -4430,30 +4385,16 @@ return `
                         console.log('⚠️ Project CSV file empty or invalid, using hardcoded data');
                     }
                 } else {
-                    debug('ℹ️ Project CSV file not found, using hardcoded data');
+                    console.log('ℹ️ Project CSV file not found, using hardcoded data');
                 }
             } catch (error) {
-                debug('ℹ️ Could not load project CSV file, using hardcoded data:', error.message);
+                console.log('ℹ️ Could not load project CSV file, using hardcoded data:', error.message);
             }
-            */
         });
-        
-        } catch (initError) {
-            console.error('❌ Initialization Error:', initError);
-            document.body.innerHTML = `
-                <div style="padding: 20px; background: #1a1a1a; color: #fff; font-family: monospace;">
-                    <h1 style="color: #ff6b6b;">Initialization Failed</h1>
-                    <p><strong>Error:</strong> ${initError.message}</p>
-                    <p><strong>Stack:</strong></p>
-                    <pre style="background: #000; padding: 10px; overflow: auto;">${initError.stack}</pre>
-                    <p style="margin-top: 20px; color: #ffd93d;">Please screenshot this and report to developer.</p>
-                </div>
-            `;
-        }
     </script>
     
     <!-- Version Info -->
-    <div class="version-info">v5.3.1 - NO CSV/3JS - 2025-02-12</div>
+    <div class="version-info">v5.2.1 - 2025-02-12</div>
     
     <!-- Data Manager Modal -->
     <div class="data-manager-modal" id="dataManagerModal" style="display: none; visibility: hidden; opacity: 0; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 200000;">
