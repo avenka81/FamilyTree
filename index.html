@@ -171,13 +171,15 @@
         }
         
         .person-list-container {
-            flex: 1; /* Take remaining space */
-            overflow-y: auto; /* Scroll here, not on sidebar */
+            flex: 1 1 auto; /* Grow and shrink, auto basis */
+            overflow-y: scroll; /* Always show scrollbar area */
             overflow-x: hidden;
             padding: 20px 32px;
             -webkit-overflow-scrolling: touch; /* Smooth iOS scrolling */
             overscroll-behavior: contain; /* Prevent scroll chaining */
-            min-height: 0; /* Important for flex children with overflow */
+            /* Approximate: 100vh - header(~80px) - controls(~200px) - search(~120px) */
+            height: calc(100vh - 400px);
+            min-height: 200px;
         }
         
         .person-item {
@@ -951,13 +953,10 @@
             max-width: 85vw;
             z-index: 99999; /* Very high - always on top */
             transition: left 0.3s ease;
-            overflow-y: auto; /* Sidebar itself can scroll */
-            overflow-x: hidden;
-            -webkit-overflow-scrolling: touch;
+            overflow: hidden; /* Don't scroll sidebar itself */
             pointer-events: auto;
             background: linear-gradient(180deg, rgba(42, 40, 28, 0.98) 0%, rgba(29, 27, 19, 1) 100%);
             box-shadow: 4px 0 30px rgba(0, 0, 0, 0.8);
-            overscroll-behavior: contain; /* Prevent scroll chaining to tree */
             display: flex;
             flex-direction: column;
         }
@@ -1599,7 +1598,7 @@
             {id: 135, name: "Apurva", sex: "Female", born: "", until: "", fatherId: 132, motherId: 133, imageId: ""}
         ];
         
-        console.log('🌳 Family Tree App v2.6.5 - Loaded');
+        console.log('🌳 Family Tree App v2.7.0 - Loaded');
         console.log('📊 Initial family data count:', familyData.length);
         
         let personMap = {};
@@ -3318,13 +3317,14 @@ return `
             
             // Complete event isolation for sidebar
             const sidebar = document.getElementById('mobileSidebar');
+            const personListContainer = document.querySelector('.person-list-container');
             const treeCanvas = document.querySelector('.tree-canvas');
             
-            if (sidebar && treeCanvas) {
-                // Prevent scroll chaining from sidebar to tree
-                sidebar.addEventListener('wheel', function(e) {
-                    const isAtTop = sidebar.scrollTop === 0;
-                    const isAtBottom = sidebar.scrollTop + sidebar.clientHeight >= sidebar.scrollHeight;
+            if (sidebar && personListContainer && treeCanvas) {
+                // Prevent scroll chaining from person-list to tree
+                personListContainer.addEventListener('wheel', function(e) {
+                    const isAtTop = personListContainer.scrollTop === 0;
+                    const isAtBottom = personListContainer.scrollTop + personListContainer.clientHeight >= personListContainer.scrollHeight;
                     
                     // If scrolling up at top, or down at bottom, prevent default to stop propagation
                     if ((isAtTop && e.deltaY < 0) || (isAtBottom && e.deltaY > 0)) {
@@ -3335,14 +3335,14 @@ return `
                 
                 // Same for touch scroll
                 let startY = 0;
-                sidebar.addEventListener('touchstart', function(e) {
+                personListContainer.addEventListener('touchstart', function(e) {
                     startY = e.touches[0].pageY;
                 }, { passive: true });
                 
-                sidebar.addEventListener('touchmove', function(e) {
+                personListContainer.addEventListener('touchmove', function(e) {
                     const currentY = e.touches[0].pageY;
-                    const isAtTop = sidebar.scrollTop === 0;
-                    const isAtBottom = sidebar.scrollTop + sidebar.clientHeight >= sidebar.scrollHeight;
+                    const isAtTop = personListContainer.scrollTop === 0;
+                    const isAtBottom = personListContainer.scrollTop + personListContainer.clientHeight >= personListContainer.scrollHeight;
                     
                     const isScrollingUp = currentY > startY;
                     const isScrollingDown = currentY < startY;
@@ -3405,13 +3405,13 @@ return `
     </script>
     
     <!-- Version Info -->
-    <div class="version-info">v2.6.5 - 2025-02-12</div>
+    <div class="version-info">v2.7.0 - 2025-02-12</div>
     
     <!-- Data Manager Modal -->
     <div class="data-manager-modal" id="dataManagerModal" style="display: none; visibility: hidden; opacity: 0; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 200000;">
         <div class="data-manager-content">
             <div class="data-manager-header">
-                <h2>📝 Family Data Manager</h2>
+                <h2>Family Data Manager</h2>
                 <button class="data-manager-close" onclick="closeDataManager()">×</button>
             </div>
             <div class="data-manager-body">
@@ -3426,12 +3426,12 @@ return `
                 <div class="tab-content active" id="browseTab">
                     <div class="data-actions">
                         <div class="form-group" style="flex: 1; max-width: 400px; margin: 0;">
-                            <input type="text" id="searchPeople" placeholder="🔍 Search by name..." 
+                            <input type="text" id="searchPeople" placeholder="Search by name..." 
                                    oninput="filterPeopleList()" 
                                    style="width: 100%; padding: 12px 20px; font-size: 16px;">
                         </div>
-                        <button class="action-btn" onclick="refreshPeopleList()">🔄 Refresh</button>
-                        <button class="action-btn secondary" onclick="switchTab('add')">➕ Add New Person</button>
+                        <button class="action-btn" onclick="refreshPeopleList()">Refresh</button>
+                        <button class="action-btn secondary" onclick="switchTab('add')">Add New Person</button>
                     </div>
                     <div class="people-list" id="peopleList"></div>
                 </div>
@@ -3485,7 +3485,7 @@ return `
                         </div>
                         <div class="form-actions">
                             <button class="action-btn secondary" onclick="clearAddForm()">Clear</button>
-                            <button class="action-btn" onclick="addPerson()">➕ Add Person</button>
+                            <button class="action-btn" onclick="addPerson()">Add Person</button>
                         </div>
                     </div>
                 </div>
@@ -3542,8 +3542,8 @@ return `
                             </div>
                         </div>
                         <div class="form-actions">
-                            <button class="action-btn secondary" onclick="deletePerson()" style="background: linear-gradient(135deg, #e74c3c, #c0392b);">🗑️ Delete</button>
-                            <button class="action-btn" onclick="savePerson()">💾 Save Changes</button>
+                            <button class="action-btn secondary" onclick="deletePerson()" style="background: linear-gradient(135deg, #e74c3c, #c0392b);">Delete</button>
+                            <button class="action-btn" onclick="savePerson()">Save Changes</button>
                         </div>
                     </div>
                 </div>
@@ -3551,7 +3551,7 @@ return `
                 <!-- Import/Export Tab -->
                 <div class="tab-content" id="importExportTab">
                     <div class="import-export-area">
-                        <h3>📊 Google Sheets Integration</h3>
+                        <h3>Google Sheets Integration</h3>
                         <p style="color: var(--gold-200); margin-bottom: 15px;">
                             Connect to a Google Sheet to sync your family data. Edit in Sheets or in this app!
                         </p>
@@ -3561,24 +3561,24 @@ return `
                                    style="width: 100%;">
                         </div>
                         <div class="data-actions">
-                            <button class="action-btn" onclick="exportForGoogleSheets()">📤 Export for Sheets (Step 1)</button>
-                            <button class="action-btn" onclick="loadFromGoogleSheets()">📥 Load from Sheets</button>
-                            <button class="action-btn" onclick="saveToGoogleSheets()">💾 Save to Sheets</button>
+                            <button class="action-btn" onclick="exportForGoogleSheets()">Export for Sheets (Step 1)</button>
+                            <button class="action-btn" onclick="loadFromGoogleSheets()">Load from Sheets</button>
+                            <button class="action-btn" onclick="saveToGoogleSheets()">Save to Sheets</button>
                         </div>
                         <div id="sheetsStatus" style="margin-top: 10px; color: var(--gold-300); font-size: 14px;"></div>
                     </div>
                     
                     <div class="import-export-area" style="margin-top: 25px;">
-                        <h3>📥 Import Data</h3>
+                        <h3>Import Data</h3>
                         <p style="color: var(--gold-200); margin-bottom: 15px;">
                             Import family data from JSON or CSV file. This will replace all current data.
                         </p>
                         <div class="data-actions">
                             <div class="file-input-wrapper">
-                                <button class="action-btn">📁 Choose File</button>
+                                <button class="action-btn">Choose File</button>
                                 <input type="file" id="importFile" accept=".json,.csv" onchange="importData()">
                             </div>
-                            <button class="action-btn secondary" onclick="showImportTextArea()">✏️ Paste JSON</button>
+                            <button class="action-btn secondary" onclick="showImportTextArea()">Paste JSON</button>
                         </div>
                         <div id="importTextAreaContainer" style="display: none; margin-top: 20px;">
                             <textarea id="importTextArea" placeholder="Paste JSON data here..."></textarea>
@@ -3590,22 +3590,22 @@ return `
                     </div>
                     
                     <div class="import-export-area" style="margin-top: 25px;">
-                        <h3>📤 Export Data</h3>
+                        <h3>Export Data</h3>
                         <p style="color: var(--gold-200); margin-bottom: 15px;">
                             Download your family data for backup or editing.
                         </p>
                         <div class="data-actions">
-                            <button class="action-btn" onclick="exportJSON()">💾 Download JSON</button>
-                            <button class="action-btn" onclick="exportCSV()">📊 Download CSV</button>
-                            <button class="action-btn secondary" onclick="copyToClipboard()">📋 Copy JSON</button>
+                            <button class="action-btn" onclick="exportJSON()">Download JSON</button>
+                            <button class="action-btn" onclick="exportCSV()">Download CSV</button>
+                            <button class="action-btn secondary" onclick="copyToClipboard()">Copy JSON</button>
                         </div>
                         <div class="data-actions" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(212, 175, 55, 0.2);">
                             <button class="action-btn" onclick="exportUpdatedHTML()" style="background: linear-gradient(135deg, #3498db, #2980b9); flex: 1;">
-                                🌐 Download Updated HTML File
+                                Download Updated HTML File
                             </button>
                         </div>
                         <p style="color: var(--gold-200); margin-top: 10px; font-size: 13px; opacity: 0.8;">
-                            💡 Downloads a new HTML file with current data baked in. Upload to GitHub to make changes permanent!
+                            Note: Downloads a new HTML file with current data baked in. Upload to GitHub to make changes permanent!
                         </p>
                     </div>
                 </div>
