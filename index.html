@@ -244,6 +244,8 @@
             overflow: auto;
             overflow-x: auto;
             overflow-y: auto;
+            -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+            touch-action: pan-x pan-y; /* Allow touch panning */
         }
         
         .tree-scroll-content {
@@ -898,10 +900,157 @@
         ::-webkit-scrollbar-thumb { background: rgba(212, 175, 55, 0.3); border-radius: 5px; }
         ::-webkit-scrollbar-thumb:hover { background: rgba(212, 175, 55, 0.5); }
         
+        /* Responsive Design - Mobile First */
         @media (max-width: 968px) {
-            .app { flex-direction: column; }
-            .sidebar { width: 100%; max-height: 50vh; border-right: none; border-bottom: 1px solid rgba(212, 175, 55, 0.2); }
+            .app { 
+                flex-direction: column; 
+            }
+            
+            .sidebar { 
+                width: 100%; 
+                max-height: 40vh; 
+                border-right: none; 
+                border-bottom: 2px solid rgba(212, 175, 55, 0.3); 
+                overflow-y: auto;
+            }
+            
+            .controls-bar {
+                flex-wrap: wrap;
+                gap: 8px;
+                padding: 12px;
+            }
+            
+            .control-btn {
+                font-size: 12px;
+                padding: 8px 12px;
+                flex: 1 1 auto;
+                min-width: 100px;
+            }
+            
+            .zoom-controls {
+                right: 10px;
+                bottom: 60px;
+            }
+            
+            .zoom-btn {
+                width: 40px;
+                height: 40px;
+                font-size: 18px;
+            }
+            
+            .version-info {
+                bottom: 5px;
+                right: 5px;
+                font-size: 10px;
+                padding: 4px 8px;
+            }
+            
+            /* Hide sidebar on mobile by default, show toggle */
+            .sidebar {
+                position: fixed;
+                left: -100%;
+                top: 0;
+                height: 100vh;
+                max-height: 100vh;
+                width: 80%;
+                max-width: 300px;
+                z-index: 9999;
+                transition: left 0.3s ease;
+                border-right: 2px solid var(--gold-400);
+                border-bottom: none;
+            }
+            
+            .sidebar.mobile-open {
+                left: 0;
+            }
+            
+            .mobile-sidebar-toggle {
+                display: block;
+                position: fixed;
+                top: 10px;
+                left: 10px;
+                z-index: 10000;
+                background: linear-gradient(135deg, var(--gold-400), var(--gold-500));
+                color: var(--bark-900);
+                border: none;
+                width: 50px;
+                height: 50px;
+                border-radius: 50%;
+                font-size: 24px;
+                cursor: pointer;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+                transition: all 0.3s;
+            }
+            
+            .mobile-sidebar-toggle:active {
+                transform: scale(0.95);
+            }
+            
+            .mobile-overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.7);
+                z-index: 9998;
+            }
+            
+            .mobile-overlay.active {
+                display: block;
+            }
         }
+        
+        /* Desktop - hide mobile toggle */
+        @media (min-width: 969px) {
+            .mobile-sidebar-toggle {
+                display: none;
+            }
+            
+            .mobile-overlay {
+                display: none !important;
+            }
+        }
+        
+        /* Extra small mobile devices */
+        @media (max-width: 480px) {
+            .node-card {
+                width: 200px;
+                min-height: 120px;
+                padding: 15px 18px;
+                font-size: 13px;
+            }
+            
+            .node-name {
+                font-size: 13px;
+            }
+            
+            .node-image {
+                width: 50px;
+                height: 50px;
+            }
+            
+            .spouse-connector {
+                width: 25px;
+            }
+            
+            .direction-toggle {
+                width: 18px;
+                height: 18px;
+                font-size: 12px;
+            }
+            
+            .control-btn {
+                font-size: 11px;
+                padding: 6px 10px;
+            }
+            
+            .tree-canvas {
+                font-size: 14px;
+            }
+        }
+        
         
         /* Data Manager Modal */
         .data-manager-modal {
@@ -1173,8 +1322,12 @@
     </style>
 </head>
 <body>
+    <!-- Mobile Sidebar Toggle -->
+    <button class="mobile-sidebar-toggle" onclick="toggleMobileSidebar()" aria-label="Toggle menu">☰</button>
+    <div class="mobile-overlay" onclick="toggleMobileSidebar()"></div>
+    
     <div class="app">
-        <div class="sidebar">
+        <div class="sidebar" id="mobileSidebar">
             <div class="sidebar-header">
                 <h1 class="app-title">Heritage Tree</h1>
                 <p class="app-subtitle">Family Explorer</p>
@@ -1377,7 +1530,7 @@
             {id: 135, name: "Apurva", sex: "Female", born: "", until: "", fatherId: 132, motherId: 133, imageId: ""}
         ];
         
-        console.log('🌳 Family Tree App v2.3.0 - Loaded');
+        console.log('🌳 Family Tree App v2.4.0 - Loaded');
         console.log('📊 Initial family data count:', familyData.length);
         
         let personMap = {};
@@ -1632,6 +1785,14 @@
         
         function selectPerson(personId) {
             const person = personMap[personId];
+            
+            // Close mobile sidebar when selecting
+            if (window.innerWidth <= 968) {
+                const sidebar = document.getElementById('mobileSidebar');
+                const overlay = document.querySelector('.mobile-overlay');
+                sidebar.classList.remove('mobile-open');
+                overlay.classList.remove('active');
+            }
             
             // Handle relationship mode
             if (relationshipMode) {
@@ -2195,6 +2356,15 @@ return `
             return html;
         }
 
+        // Mobile sidebar toggle
+        function toggleMobileSidebar() {
+            const sidebar = document.getElementById('mobileSidebar');
+            const overlay = document.querySelector('.mobile-overlay');
+            
+            sidebar.classList.toggle('mobile-open');
+            overlay.classList.toggle('active');
+        }
+        
         function resetView() {
             selectedPerson = null;
             expandedNodes.clear();
@@ -3046,7 +3216,7 @@ return `
     </script>
     
     <!-- Version Info -->
-    <div class="version-info">v2.3.0 - 2025-02-12</div>
+    <div class="version-info">v2.4.0 - 2025-02-12</div>
     
     <!-- Data Manager Modal -->
     <div class="data-manager-modal" id="dataManagerModal">
