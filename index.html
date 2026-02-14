@@ -1501,12 +1501,12 @@
             opacity: 0.3;
         }
         
-        /* Toggle button ON the vertical line, centered with card */
+        /* Toggle button - centered vertically on EVERY row */
         .fold-toggle {
             position: absolute;
-            left: -23px; /* Relative to tree-node - places it on the left vertical line */
-            top: 50%; /* Center vertically with the card */
-            transform: translateY(-50%); /* Perfect centering */
+            left: -23px; /* Position on the left vertical line */
+            top: 50%; /* Center vertically */
+            transform: translateY(-50%); /* Perfect vertical centering */
             width: 18px;
             height: 18px;
             background: var(--gold-500);
@@ -1529,21 +1529,8 @@
             transform: translateY(-50%) scale(1.15);
         }
         
-        .fold-toggle.collapsed::before {
-            content: '+';
-        }
-        
-        .fold-toggle.expanded::before {
-            content: '−';
-        }
-        
-        /* Hide/show children */
-        .children-container.collapsed {
-            display: none !important;
-        }
-        
-        .children-container.expanded {
-            display: block !important;
+        .fold-toggle::before {
+            content: '−'; /* Default symbol for now */
         }
         
         /* Tree node positioning */
@@ -1777,7 +1764,7 @@
             {id: 135, name: "Apurva", sex: "Female", born: "", until: "", fatherId: 132, motherId: 133, imageId: ""}
         ];
         
-        console.log('🌳 Family Tree App v3.1.2 - Loaded');
+        console.log('🌳 Family Tree App v3.2.1 - DEBUG - Loaded');
         console.log('📊 Initial family data count:', familyData.length);
         
         let personMap = {};
@@ -2294,26 +2281,55 @@
             renderTree();
         }
         
-        // Code folding style toggle for children
+        // Toggle function - placeholder for now
         function toggleFold(foldId, event) {
             event.stopPropagation(); // Prevent card click
-            const container = document.getElementById(foldId);
-            const toggle = event.currentTarget;
-            
-            if (container.classList.contains('expanded')) {
-                container.classList.remove('expanded');
-                container.classList.add('collapsed');
-                toggle.classList.remove('expanded');
-                toggle.classList.add('collapsed');
-                console.log('📁 Collapsed:', foldId);
-            } else {
-                container.classList.remove('collapsed');
-                container.classList.add('expanded');
-                toggle.classList.remove('collapsed');
-                toggle.classList.add('expanded');
-                console.log('📂 Expanded:', foldId);
-            }
+            console.log('🔘 Toggle clicked for:', foldId);
+            // Logic will be added later
         }
+        
+        // DEBUG HELPER: Run debugToggles() in console to see all toggle positions
+        window.debugToggles = function() {
+            const toggles = document.querySelectorAll('.fold-toggle');
+            console.log('=== TOGGLE DEBUG INFO ===');
+            console.log('Total toggles found:', toggles.length);
+            console.log('Total tree-nodes:', document.querySelectorAll('.tree-node').length);
+            
+            toggles.forEach((toggle, index) => {
+                const treeNode = toggle.closest('.tree-node');
+                const generation = treeNode?.getAttribute('data-generation');
+                const personId = toggle.getAttribute('data-person-id');
+                const rect = toggle.getBoundingClientRect();
+                const nodeRect = treeNode?.getBoundingClientRect();
+                
+                console.log(`Toggle ${index + 1}:`, {
+                    personId,
+                    generation,
+                    left: rect.left,
+                    top: rect.top,
+                    nodeLeft: nodeRect?.left,
+                    nodeTop: nodeRect?.top,
+                    visible: rect.width > 0 && rect.height > 0
+                });
+            });
+            
+            const treeNodes = document.querySelectorAll('.tree-node');
+            const nodesWithoutToggle = [];
+            treeNodes.forEach(node => {
+                if (!node.querySelector('.fold-toggle')) {
+                    nodesWithoutToggle.push(node);
+                }
+            });
+            
+            if (nodesWithoutToggle.length > 0) {
+                console.warn('⚠️ Nodes WITHOUT toggles:', nodesWithoutToggle.length);
+                nodesWithoutToggle.forEach(node => {
+                    console.log('  Missing toggle on generation:', node.getAttribute('data-generation'));
+                });
+            }
+            
+            console.log('=== END DEBUG ===');
+        };
         
         // Collapse all children in mobile view
         function collapseAllMobile() {
@@ -2374,14 +2390,19 @@
                 
                 if (hasSpouse) {
                     console.log('💑 Rendering spouse pair:', person.name, '&', spouse.name);
+                    console.log('   🔘 Adding toggle for person ID:', person.id, 'at generation:', generation);
                     rendered.add(spouse.id);
                     output += `<div class="tree-node" data-generation="${generation}">
+                        <div class="fold-toggle expanded" data-person-id="${person.id}" onclick="toggleFold('fold-${person.id}', event)"></div>
                         <div class="spouse-pair">
                             ${cardHtml}
                             ${spouseCardHtml}
                         </div>`;
                 } else {
+                    console.log('👤 Rendering single person:', person.name);
+                    console.log('   🔘 Adding toggle for person ID:', person.id, 'at generation:', generation);
                     output += `<div class="tree-node" data-generation="${generation}">
+                        <div class="fold-toggle expanded" data-person-id="${person.id}" onclick="toggleFold('fold-${person.id}', event)"></div>
                         <div class="single-person">${cardHtml}</div>`;
                 }
                 
@@ -2395,7 +2416,6 @@
                 
                 if (children.length > 0) {
                     const foldId = `fold-${person.id}`;
-                    output += `<div class="fold-toggle expanded" onclick="toggleFold('${foldId}', event)"></div>`;
                     output += `<div class="children-container expanded" id="${foldId}">`;
                     children.forEach(child => {
                         output += renderPersonMobile(child, generation + 1);
@@ -3899,7 +3919,7 @@ return `
     </script>
     
     <!-- Version Info -->
-    <div class="version-info">v3.1.2 - 2025-02-12</div>
+    <div class="version-info">v3.2.1 - DEBUG - 2025-02-12</div>
     
     <!-- Data Manager Modal -->
     <div class="data-manager-modal" id="dataManagerModal" style="display: none; visibility: hidden; opacity: 0; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 200000;">
