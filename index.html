@@ -1129,15 +1129,15 @@
                 position: relative;
             }
             
-            /* Heart symbol between spouses in mobile view */
+            /* Heart symbol next to toggle on the left line for spouse pairs */
             .spouse-pair::after {
                 content: '♥';
                 position: absolute;
-                left: 50%;
+                left: -8px; /* Right next to toggle (toggle is at -30px + 18px width = -12px end) */
                 top: 50%;
-                transform: translate(-50%, -50%);
+                transform: translateY(-50%);
                 color: var(--gold-500);
-                font-size: 18px;
+                font-size: 16px;
                 z-index: 5;
                 pointer-events: none;
             }
@@ -1524,6 +1524,87 @@
             to { transform: translateX(0); opacity: 1; }
         }
         
+        /* ===== VERTICAL TREE LAYOUT - APPLIES TO ALL SCREEN SIZES ===== */
+        
+        .tree-node {
+            display: block;
+            margin: 0;
+            padding: 0;
+            width: 100%;
+        }
+        
+        /* Remove margin-based indents - tree-node stays aligned left */
+        .tree-node[data-generation="0"],
+        .tree-node[data-generation="1"],
+        .tree-node[data-generation="2"],
+        .tree-node[data-generation="3"],
+        .tree-node[data-generation="4"],
+        .tree-node[data-generation="5"],
+        .tree-node[data-generation="6"],
+        .tree-node[data-generation="7"] { 
+            margin-left: 0;
+        }
+        
+        /* Indent based on generation using padding on the content */
+        .tree-node[data-generation="0"] .spouse-pair,
+        .tree-node[data-generation="0"] .single-person { padding-left: 0; }
+        
+        .tree-node[data-generation="1"] .spouse-pair,
+        .tree-node[data-generation="1"] .single-person { padding-left: 20px; }
+        
+        .tree-node[data-generation="2"] .spouse-pair,
+        .tree-node[data-generation="2"] .single-person { padding-left: 40px; }
+        
+        .tree-node[data-generation="3"] .spouse-pair,
+        .tree-node[data-generation="3"] .single-person { padding-left: 60px; }
+        
+        .tree-node[data-generation="4"] .spouse-pair,
+        .tree-node[data-generation="4"] .single-person { padding-left: 80px; }
+        
+        .tree-node[data-generation="5"] .spouse-pair,
+        .tree-node[data-generation="5"] .single-person { padding-left: 100px; }
+        
+        .tree-node[data-generation="6"] .spouse-pair,
+        .tree-node[data-generation="6"] .single-person { padding-left: 120px; }
+        
+        .tree-node[data-generation="7"] .spouse-pair,
+        .tree-node[data-generation="7"] .single-person { padding-left: 140px; }
+        
+        /* Spouse pair container */
+        .spouse-pair {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            align-items: flex-start;
+            position: relative;
+        }
+        
+        /* Heart symbol next to toggle on the left line for spouse pairs */
+        .spouse-pair::after {
+            content: '♥';
+            position: absolute;
+            left: -8px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--gold-500);
+            font-size: 16px;
+            z-index: 5;
+            pointer-events: none;
+        }
+        
+        /* Single person container */
+        .single-person {
+            margin-bottom: 15px;
+        }
+        
+        /* Children container */
+        .children-container {
+            display: block;
+            margin-top: 10px;
+        }
+        
+        /* ===== END VERTICAL LAYOUT ===== */
+        
         /* Code Folding Style - Vertical Line on Left */
         .tree-root.mobile-vertical {
             position: relative;
@@ -1571,8 +1652,12 @@
             transform: translateY(-50%) scale(1.15);
         }
         
-        .fold-toggle::before {
-            content: '−'; /* Default symbol for now */
+        .fold-toggle.expanded::before {
+            content: '−'; /* Minus sign when expanded */
+        }
+        
+        .fold-toggle.collapsed::before {
+            content: '+'; /* Plus sign when collapsed */
         }
         
         /* Tree node positioning */
@@ -1613,7 +1698,6 @@
                 <button class="control-btn" onclick="toggleRelationshipMode(); closeMobileSidebarIfNeeded();" id="relationshipBtn">Find Relationship</button>
                 <button class="control-btn" onclick="openDataManager(); closeMobileSidebarIfNeeded();" id="dataManagerBtn">Data Manager</button>
                 <button class="control-btn" onclick="toggleDebugMode(); closeMobileSidebarIfNeeded();" id="debugBtn">Debug</button>
-                <button class="control-btn" onclick="toggleMobileLayout(); closeMobileSidebarIfNeeded();" id="mobileLayoutBtn">Mobile Layout: OFF</button>
                 <button class="control-btn" onclick="openThemeSelector(); closeMobileSidebarIfNeeded();" id="themeBtn">Theme Selector</button>
             </div>
             
@@ -1806,7 +1890,7 @@
             {id: 135, name: "Apurva", sex: "Female", born: "", until: "", fatherId: 132, motherId: 133, imageId: ""}
         ];
         
-        console.log('🌳 Family Tree App v3.2.3 - Loaded');
+        console.log('🌳 Family Tree App v4.1.0 - Loaded');
         console.log('📊 Initial family data count:', familyData.length);
         
         let personMap = {};
@@ -2323,11 +2407,73 @@
             renderTree();
         }
         
-        // Toggle function - placeholder for now
+        // Toggle function - collapses/expands based on generation level
         function toggleFold(foldId, event) {
             event.stopPropagation(); // Prevent card click
-            console.log('🔘 Toggle clicked for:', foldId);
-            // Logic will be added later
+            
+            const toggle = event.currentTarget;
+            const treeNode = toggle.closest('.tree-node');
+            const generation = parseInt(treeNode.getAttribute('data-generation'));
+            
+            console.log('🔘 Toggle clicked for:', foldId, 'at generation:', generation);
+            
+            // Check current state
+            const isExpanded = toggle.classList.contains('expanded');
+            
+            if (isExpanded) {
+                // COLLAPSE: Hide all following rows with generation > current
+                console.log('📁 Collapsing - hiding children at generation >', generation);
+                
+                let nextNode = treeNode.nextElementSibling;
+                while (nextNode && nextNode.classList.contains('tree-node')) {
+                    const nextGen = parseInt(nextNode.getAttribute('data-generation'));
+                    
+                    if (nextGen <= generation) {
+                        // Stop when we reach same or earlier generation
+                        console.log('  ⏹️ Stopped at generation', nextGen);
+                        break;
+                    }
+                    
+                    // Hide this row
+                    nextNode.style.display = 'none';
+                    nextNode.classList.add('folded');
+                    console.log('  👻 Hidden:', nextNode.querySelector('.node-name')?.textContent, 'gen', nextGen);
+                    
+                    nextNode = nextNode.nextElementSibling;
+                }
+                
+                // Update toggle appearance
+                toggle.classList.remove('expanded');
+                toggle.classList.add('collapsed');
+                
+            } else {
+                // EXPAND: Show all immediate children (generation = current + 1)
+                console.log('📂 Expanding - showing direct children');
+                
+                let nextNode = treeNode.nextElementSibling;
+                while (nextNode && nextNode.classList.contains('tree-node')) {
+                    const nextGen = parseInt(nextNode.getAttribute('data-generation'));
+                    
+                    if (nextGen <= generation) {
+                        // Stop when we reach same or earlier generation
+                        break;
+                    }
+                    
+                    if (nextGen === generation + 1) {
+                        // Show direct children only
+                        nextNode.style.display = 'block';
+                        nextNode.classList.remove('folded');
+                        console.log('  👁️ Shown:', nextNode.querySelector('.node-name')?.textContent, 'gen', nextGen);
+                    }
+                    // Don't show deeper descendants - they stay hidden
+                    
+                    nextNode = nextNode.nextElementSibling;
+                }
+                
+                // Update toggle appearance
+                toggle.classList.remove('collapsed');
+                toggle.classList.add('expanded');
+            }
         }
         
         // DEBUG HELPER: Run debugToggles() in console to see all toggle positions
@@ -2373,30 +2519,83 @@
             console.log('=== END DEBUG ===');
         };
         
-        // Collapse all children in mobile view
+        // DEBUG HELPER: Check padding and positioning
+        window.debugLayout = function() {
+            console.log('=== LAYOUT DEBUG ===');
+            
+            // Check each generation
+            for (let gen = 0; gen <= 3; gen++) {
+                const nodes = document.querySelectorAll(`.tree-node[data-generation="${gen}"]`);
+                if (nodes.length > 0) {
+                    const firstNode = nodes[0];
+                    const spousePair = firstNode.querySelector('.spouse-pair');
+                    const singlePerson = firstNode.querySelector('.single-person');
+                    const content = spousePair || singlePerson;
+                    
+                    const nodeStyles = window.getComputedStyle(firstNode);
+                    const contentStyles = content ? window.getComputedStyle(content) : null;
+                    
+                    console.log(`Generation ${gen}:`, {
+                        nodes: nodes.length,
+                        nodeMarginLeft: nodeStyles.marginLeft,
+                        contentPaddingLeft: contentStyles?.paddingLeft,
+                        nodeRect: firstNode.getBoundingClientRect(),
+                        contentRect: content?.getBoundingClientRect()
+                    });
+                }
+            }
+            
+            // Check heart positioning
+            const spousePairs = document.querySelectorAll('.spouse-pair');
+            if (spousePairs.length > 0) {
+                const firstPair = spousePairs[0];
+                const afterStyles = window.getComputedStyle(firstPair, '::after');
+                console.log('Heart (::after) position:', {
+                    left: afterStyles.left,
+                    top: afterStyles.top,
+                    transform: afterStyles.transform,
+                    content: afterStyles.content
+                });
+            }
+            
+            console.log('=== END LAYOUT DEBUG ===');
+        };
+        
+        // Collapse all children in vertical view
         function collapseAllMobile() {
-            document.querySelectorAll('.children-container.expanded').forEach(container => {
-                container.classList.remove('expanded');
-                container.classList.add('collapsed');
-            });
+            // Set all toggles to collapsed
             document.querySelectorAll('.fold-toggle.expanded').forEach(toggle => {
                 toggle.classList.remove('expanded');
                 toggle.classList.add('collapsed');
             });
-            console.log('📁 All collapsed');
+            
+            // Hide all rows except generation 0
+            document.querySelectorAll('.tree-node').forEach(node => {
+                const gen = parseInt(node.getAttribute('data-generation'));
+                if (gen > 0) {
+                    node.style.display = 'none';
+                    node.classList.add('folded');
+                }
+            });
+            
+            console.log('📁 All collapsed - only generation 0 visible');
         }
         
-        // Expand all children in mobile view
+        // Expand all children in vertical view
         function expandAllMobile() {
-            document.querySelectorAll('.children-container.collapsed').forEach(container => {
-                container.classList.remove('collapsed');
-                container.classList.add('expanded');
-            });
+            // Set all toggles to expanded
             document.querySelectorAll('.fold-toggle.collapsed').forEach(toggle => {
                 toggle.classList.remove('collapsed');
                 toggle.classList.add('expanded');
             });
-            console.log('📂 All expanded');
+            
+            // Show all rows
+            document.querySelectorAll('.tree-node').forEach(node => {
+                node.style.display = 'block';
+                node.classList.remove('folded');
+            });
+            
+            console.log('📂 All expanded - all generations visible');
         }
         
         // Mobile detection
@@ -2543,17 +2742,10 @@
                 console.log('Starting from person who hid parents:', actualRoot.name);
             }
             
-            // Use mobile renderer on small screens
-            if (isMobileView()) {
-                const mobileHTML = renderMobileTree(startPerson);
-                container.innerHTML = `<div class="tree-root mobile-vertical">${mobileHTML}</div>`;
-                console.log('Mobile vertical tree rendered');
-                return;
-            }
-            
-            const treeHTML = buildNode(startPerson, 0);
-            console.log('Tree HTML generated, length:', treeHTML.length);
-            container.innerHTML = `<div class="tree-root">${treeHTML}</div>`;
+            // Always use vertical layout (was "mobile" but now it's the only layout)
+            const treeHTML = renderMobileTree(startPerson);
+            container.innerHTML = `<div class="tree-root mobile-vertical">${treeHTML}</div>`;
+            console.log('✅ Vertical tree rendered');
         }
         
         function countDescendants(personId) {
@@ -3962,7 +4154,7 @@ return `
     </script>
     
     <!-- Version Info -->
-    <div class="version-info">v3.2.3 - 2025-02-12</div>
+    <div class="version-info">v4.1.0 - 2025-02-12</div>
     
     <!-- Data Manager Modal -->
     <div class="data-manager-modal" id="dataManagerModal" style="display: none; visibility: hidden; opacity: 0; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 200000;">
