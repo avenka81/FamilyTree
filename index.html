@@ -7,29 +7,33 @@
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bark-900: #1a0f0a;
-            --bark-800: #2d1b12;
-            --bark-700: #42281a;
-            --gold-500: #d4af37;
-            --gold-400: #e8c468;
-            --gold-300: #f5e6b3;
-            --sage-500: #7a8f6e;
-            --sage-400: #a8b89d;
-            --rose-500: #a05858;
-            --rose-400: #c07878;
-            --cream: #f8f6f0;
-            --parchment: #ebe7d8;
+            /* Modern Color Palette */
+            --bark-900: #1a1a1a;      /* Deep charcoal */
+            --bark-800: #2d2d2d;      /* Charcoal */
+            --bark-700: #3d3d3d;      /* Medium charcoal */
+            --gold-500: #f4a261;      /* Warm coral-gold */
+            --gold-400: #f6b888;      /* Light coral */
+            --gold-300: #ffd4a3;      /* Pale coral */
+            --sage-500: #6c9a8b;      /* Sage green */
+            --sage-400: #a8c5b5;      /* Light sage */
+            --rose-500: #ff6b9d;      /* Bright pink for female */
+            --rose-400: #ffb3cc;      /* Light pink */
+            --cream: #f5f5f5;         /* Off-white */
+            --parchment: #e8e8e8;     /* Light gray */
+            --blue-500: #4a9eff;      /* Bright blue for male */
         }
         
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
         body {
-            font-family: 'Crimson Text', serif;
-            background: linear-gradient(165deg, var(--bark-900) 0%, var(--bark-800) 50%, var(--bark-700) 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(165deg, var(--bark-900) 0%, var(--bark-800) 50%, #252525 100%);
             min-height: 100vh;
             color: var(--cream);
             overflow-x: hidden;
             position: relative;
+            font-size: 16px;
+            line-height: 1.6;
         }
         
         body::before {
@@ -77,10 +81,10 @@
         }
         
         .app-title {
-            font-family: 'Playfair Display', serif;
-            font-size: 24px; /* Smaller */
-            font-weight: 900;
-            color: var(--gold-400);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 26px;
+            font-weight: 700;
+            color: var(--gold-500);
             margin-bottom: 4px;
             letter-spacing: -0.5px;
             text-shadow: 0 2px 8px rgba(212, 175, 55, 0.3);
@@ -246,15 +250,17 @@
         }
         
         .badge-sm.male {
-            background: rgba(90, 111, 78, 0.3);
-            color: var(--sage-400);
-            border: 1px solid rgba(90, 111, 78, 0.4);
+            background: rgba(74, 158, 255, 0.2);
+            color: var(--blue-500);
+            border: 1px solid rgba(74, 158, 255, 0.4);
+            font-weight: 600;
         }
         
         .badge-sm.female {
-            background: rgba(160, 88, 88, 0.3);
-            color: var(--rose-400);
-            border: 1px solid rgba(160, 88, 88, 0.4);
+            background: rgba(255, 107, 157, 0.2);
+            color: var(--rose-500);
+            border: 1px solid rgba(255, 107, 157, 0.4);
+            font-weight: 600;
         }
         
         .tree-canvas {
@@ -1385,6 +1391,17 @@
             outline: none;
             border-color: var(--gold-500);
         }
+        
+        /* Theme Selector Styles */
+        .theme-option:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
     </style>
 </head>
 <body>
@@ -1407,6 +1424,7 @@
                 <button class="control-btn" onclick="toggleRelationshipMode(); closeMobileSidebarIfNeeded();" id="relationshipBtn">Find Relationship</button>
                 <button class="control-btn" onclick="openDataManager(); closeMobileSidebarIfNeeded();" id="dataManagerBtn">Data Manager</button>
                 <button class="control-btn" onclick="toggleDebugMode(); closeMobileSidebarIfNeeded();" id="debugBtn">Debug</button>
+                <button class="control-btn" onclick="openThemeSelector(); closeMobileSidebarIfNeeded();" id="themeBtn">Theme Selector</button>
             </div>
             
             <div class="search-section">
@@ -1598,7 +1616,7 @@
             {id: 135, name: "Apurva", sex: "Female", born: "", until: "", fatherId: 132, motherId: 133, imageId: ""}
         ];
         
-        console.log('🌳 Family Tree App v2.7.0 - Loaded');
+        console.log('🌳 Family Tree App v2.9.0 - Loaded');
         console.log('📊 Initial family data count:', familyData.length);
         
         let personMap = {};
@@ -1787,7 +1805,7 @@
         let filteredPeople = [...familyData];
         let expandedNodes = new Set();
         let maxDepth = 2;
-        let currentZoom = 0.75;
+        let currentZoom = 1.0;
         const minZoom = 0.25;
         const maxZoom = 2;
         const zoomStep = 0.1;
@@ -2451,7 +2469,7 @@ return `
             expandedNodes.clear();
             hiddenDirections.clear(); // Clear all hidden junction directions
             maxDepth = 2;
-            currentZoom = 0.75; // Reset to default 75% zoom
+            currentZoom = 1.0; // Reset to default 100% zoom
             updateZoom();
             filterPeople();
             renderTree();
@@ -2595,6 +2613,147 @@ return `
             modal.style.setProperty('opacity', '0', 'important');
             currentEditingPerson = null;
         }
+        
+        // Theme Selector Functions
+        function openThemeSelector() {
+            const modal = document.getElementById('themeSelectorModal');
+            modal.style.setProperty('display', 'flex', 'important');
+            modal.style.setProperty('visibility', 'visible', 'important');
+            modal.style.setProperty('opacity', '1', 'important');
+        }
+        
+        function closeThemeSelector() {
+            const modal = document.getElementById('themeSelectorModal');
+            modal.style.setProperty('display', 'none', 'important');
+            modal.style.setProperty('visibility', 'hidden', 'important');
+            modal.style.setProperty('opacity', '0', 'important');
+        }
+        
+        function applyTheme(themeName) {
+            const root = document.documentElement;
+            
+            const themes = {
+                current: {
+                    '--bark-900': '#1a1a1a',
+                    '--bark-800': '#2d2d2d',
+                    '--bark-700': '#3d3d3d',
+                    '--gold-500': '#f4a261',
+                    '--gold-400': '#f6b888',
+                    '--gold-300': '#ffd4a3',
+                    '--sage-500': '#6c9a8b',
+                    '--sage-400': '#a8c5b5',
+                    '--rose-500': '#ff6b9d',
+                    '--rose-400': '#ffb3cc',
+                    '--cream': '#f5f5f5',
+                    '--parchment': '#e8e8e8',
+                    '--blue-500': '#4a9eff'
+                },
+                forest: {
+                    '--bark-900': '#1c2321',
+                    '--bark-800': '#2d3b35',
+                    '--bark-700': '#3d4d45',
+                    '--gold-500': '#c9a86a',
+                    '--gold-400': '#d4b88f',
+                    '--gold-300': '#e5d4b5',
+                    '--sage-500': '#5a9d8e',
+                    '--sage-400': '#7db5a6',
+                    '--rose-500': '#b87d6f',
+                    '--rose-400': '#c99589',
+                    '--cream': '#f5f1e8',
+                    '--parchment': '#e8e3d8',
+                    '--blue-500': '#5a9d8e'
+                },
+                ocean: {
+                    '--bark-900': '#0f1419',
+                    '--bark-800': '#1a2332',
+                    '--bark-700': '#253447',
+                    '--gold-500': '#ffc857',
+                    '--gold-400': '#ffd77a',
+                    '--gold-300': '#ffe9a3',
+                    '--sage-500': '#00b4d8',
+                    '--sage-400': '#33c4e0',
+                    '--rose-500': '#f72585',
+                    '--rose-400': '#f954a0',
+                    '--cream': '#f0f4f8',
+                    '--parchment': '#e1e9f0',
+                    '--blue-500': '#00b4d8'
+                },
+                royal: {
+                    '--bark-900': '#1a0f2e',
+                    '--bark-800': '#2d1f47',
+                    '--bark-700': '#3f2e5b',
+                    '--gold-500': '#daa520',
+                    '--gold-400': '#e6b84f',
+                    '--gold-300': '#f2d087',
+                    '--sage-500': '#6c5ce7',
+                    '--sage-400': '#8b7ceb',
+                    '--rose-500': '#fd79a8',
+                    '--rose-400': '#fd96ba',
+                    '--cream': '#faf8f3',
+                    '--parchment': '#f0ede5',
+                    '--blue-500': '#6c5ce7'
+                },
+                slate: {
+                    '--bark-900': '#1e1e1e',
+                    '--bark-800': '#2e2e2e',
+                    '--bark-700': '#3e3e3e',
+                    '--gold-500': '#00d9a0',
+                    '--gold-400': '#33e2b3',
+                    '--gold-300': '#66ebc6',
+                    '--sage-500': '#4dabf7',
+                    '--sage-400': '#70bbf9',
+                    '--rose-500': '#ff6b9d',
+                    '--rose-400': '#ff8fb3',
+                    '--cream': '#f8f9fa',
+                    '--parchment': '#e9ecef',
+                    '--blue-500': '#4dabf7'
+                },
+                sunset: {
+                    '--bark-900': '#1a1312',
+                    '--bark-800': '#2d221f',
+                    '--bark-700': '#3d302a',
+                    '--gold-500': '#ff9a56',
+                    '--gold-400': '#ffb380',
+                    '--gold-300': '#ffccaa',
+                    '--sage-500': '#5dade2',
+                    '--sage-400': '#7dbfe6',
+                    '--rose-500': '#ec7063',
+                    '--rose-400': '#f08d82',
+                    '--cream': '#fff5ee',
+                    '--parchment': '#f5e9e0',
+                    '--blue-500': '#5dade2'
+                }
+            };
+            
+            const theme = themes[themeName];
+            if (theme) {
+                // Apply all color variables
+                Object.keys(theme).forEach(key => {
+                    root.style.setProperty(key, theme[key]);
+                });
+                
+                // Save theme preference
+                localStorage.setItem('selectedTheme', themeName);
+                
+                console.log(`✨ Applied theme: ${themeName}`);
+                
+                // Show confirmation
+                const modal = document.getElementById('themeSelectorModal');
+                const confirmMsg = document.createElement('div');
+                confirmMsg.textContent = '✓ Theme applied!';
+                confirmMsg.style.cssText = 'position: fixed; top: 20px; right: 20px; background: var(--gold-500); color: var(--bark-900); padding: 12px 24px; border-radius: 8px; font-weight: 600; z-index: 999999; animation: slideIn 0.3s;';
+                document.body.appendChild(confirmMsg);
+                setTimeout(() => confirmMsg.remove(), 2000);
+            }
+        }
+        
+        // Load saved theme on page load
+        window.addEventListener('load', function() {
+            const savedTheme = localStorage.getItem('selectedTheme');
+            if (savedTheme) {
+                applyTheme(savedTheme);
+            }
+        });
         
         function switchTab(tabName) {
             // Update tab buttons
@@ -3405,7 +3564,7 @@ return `
     </script>
     
     <!-- Version Info -->
-    <div class="version-info">v2.7.0 - 2025-02-12</div>
+    <div class="version-info">v2.9.0 - 2025-02-12</div>
     
     <!-- Data Manager Modal -->
     <div class="data-manager-modal" id="dataManagerModal" style="display: none; visibility: hidden; opacity: 0; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 200000;">
@@ -3609,6 +3768,99 @@ return `
                         </p>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Theme Selector Modal -->
+    <div class="data-manager-modal" id="themeSelectorModal" style="display: none; visibility: hidden; opacity: 0; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 200000;">
+        <div class="data-manager-content" style="max-width: 700px;">
+            <div class="data-manager-header">
+                <h2>🎨 Theme Selector</h2>
+                <button class="data-manager-close" onclick="closeThemeSelector()">×</button>
+            </div>
+            <div class="data-manager-body" style="padding: 30px;">
+                <p style="color: var(--gold-300); margin-bottom: 25px;">
+                    Choose a color palette - changes apply instantly!
+                </p>
+                
+                <div class="theme-grid" style="display: grid; gap: 15px;">
+                    <!-- Current Theme -->
+                    <div class="theme-option" onclick="applyTheme('current')" style="padding: 20px; border: 2px solid var(--gold-500); border-radius: 12px; cursor: pointer; background: rgba(244, 162, 97, 0.1);">
+                        <h3 style="color: var(--gold-500); margin-bottom: 10px; font-size: 18px;">Current - Warm Modern</h3>
+                        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                            <div style="width: 40px; height: 40px; background: #1a1a1a; border-radius: 6px; border: 1px solid #555;"></div>
+                            <div style="width: 40px; height: 40px; background: #f4a261; border-radius: 6px;"></div>
+                            <div style="width: 40px; height: 40px; background: #4a9eff; border-radius: 6px;"></div>
+                            <div style="width: 40px; height: 40px; background: #ff6b9d; border-radius: 6px;"></div>
+                        </div>
+                        <p style="color: var(--gold-200); font-size: 13px;">Dark charcoal • Warm coral-gold • Bright blue & pink</p>
+                    </div>
+                    
+                    <!-- Option 1: Forest & Earth -->
+                    <div class="theme-option" onclick="applyTheme('forest')" style="padding: 20px; border: 2px solid #5a9d8e; border-radius: 12px; cursor: pointer; background: rgba(90, 157, 142, 0.1); transition: all 0.3s;">
+                        <h3 style="color: #c9a86a; margin-bottom: 10px; font-size: 18px;">Forest & Earth Tones</h3>
+                        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                            <div style="width: 40px; height: 40px; background: #1c2321; border-radius: 6px; border: 1px solid #555;"></div>
+                            <div style="width: 40px; height: 40px; background: #c9a86a; border-radius: 6px;"></div>
+                            <div style="width: 40px; height: 40px; background: #5a9d8e; border-radius: 6px;"></div>
+                            <div style="width: 40px; height: 40px; background: #b87d6f; border-radius: 6px;"></div>
+                        </div>
+                        <p style="color: #d4b88f; font-size: 13px;">Natural • Calming • Traditional</p>
+                    </div>
+                    
+                    <!-- Option 2: Ocean & Sky -->
+                    <div class="theme-option" onclick="applyTheme('ocean')" style="padding: 20px; border: 2px solid #00b4d8; border-radius: 12px; cursor: pointer; background: rgba(0, 180, 216, 0.1); transition: all 0.3s;">
+                        <h3 style="color: #ffc857; margin-bottom: 10px; font-size: 18px;">Ocean & Sky</h3>
+                        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                            <div style="width: 40px; height: 40px; background: #0f1419; border-radius: 6px; border: 1px solid #555;"></div>
+                            <div style="width: 40px; height: 40px; background: #ffc857; border-radius: 6px;"></div>
+                            <div style="width: 40px; height: 40px; background: #00b4d8; border-radius: 6px;"></div>
+                            <div style="width: 40px; height: 40px; background: #f72585; border-radius: 6px;"></div>
+                        </div>
+                        <p style="color: #ffd77a; font-size: 13px;">Fresh • Clean • Modern</p>
+                    </div>
+                    
+                    <!-- Option 3: Royal Purple & Gold -->
+                    <div class="theme-option" onclick="applyTheme('royal')" style="padding: 20px; border: 2px solid #daa520; border-radius: 12px; cursor: pointer; background: rgba(218, 165, 32, 0.1); transition: all 0.3s;">
+                        <h3 style="color: #daa520; margin-bottom: 10px; font-size: 18px;">Royal Purple & Gold</h3>
+                        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                            <div style="width: 40px; height: 40px; background: #1a0f2e; border-radius: 6px; border: 1px solid #555;"></div>
+                            <div style="width: 40px; height: 40px; background: #daa520; border-radius: 6px;"></div>
+                            <div style="width: 40px; height: 40px; background: #6c5ce7; border-radius: 6px;"></div>
+                            <div style="width: 40px; height: 40px; background: #fd79a8; border-radius: 6px;"></div>
+                        </div>
+                        <p style="color: #e6b84f; font-size: 13px;">Elegant • Sophisticated • Regal</p>
+                    </div>
+                    
+                    <!-- Option 4: Slate & Mint -->
+                    <div class="theme-option" onclick="applyTheme('slate')" style="padding: 20px; border: 2px solid #00d9a0; border-radius: 12px; cursor: pointer; background: rgba(0, 217, 160, 0.1); transition: all 0.3s;">
+                        <h3 style="color: #00d9a0; margin-bottom: 10px; font-size: 18px;">Slate & Mint</h3>
+                        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                            <div style="width: 40px; height: 40px; background: #1e1e1e; border-radius: 6px; border: 1px solid #555;"></div>
+                            <div style="width: 40px; height: 40px; background: #00d9a0; border-radius: 6px;"></div>
+                            <div style="width: 40px; height: 40px; background: #4dabf7; border-radius: 6px;"></div>
+                            <div style="width: 40px; height: 40px; background: #ff6b9d; border-radius: 6px;"></div>
+                        </div>
+                        <p style="color: #33e2b3; font-size: 13px;">Professional • Corporate • Clean</p>
+                    </div>
+                    
+                    <!-- Option 5: Sunset Warm -->
+                    <div class="theme-option" onclick="applyTheme('sunset')" style="padding: 20px; border: 2px solid #ff9a56; border-radius: 12px; cursor: pointer; background: rgba(255, 154, 86, 0.1); transition: all 0.3s;">
+                        <h3 style="color: #ff9a56; margin-bottom: 10px; font-size: 18px;">Sunset Warm</h3>
+                        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                            <div style="width: 40px; height: 40px; background: #1a1312; border-radius: 6px; border: 1px solid #555;"></div>
+                            <div style="width: 40px; height: 40px; background: #ff9a56; border-radius: 6px;"></div>
+                            <div style="width: 40px; height: 40px; background: #5dade2; border-radius: 6px;"></div>
+                            <div style="width: 40px; height: 40px; background: #ec7063; border-radius: 6px;"></div>
+                        </div>
+                        <p style="color: #ffb380; font-size: 13px;">Energetic • Warm • Inviting</p>
+                    </div>
+                </div>
+                
+                <p style="color: var(--gold-200); margin-top: 25px; font-size: 13px; opacity: 0.8;">
+                    💡 Your theme choice is saved automatically and persists across sessions!
+                </p>
             </div>
         </div>
     </div>
