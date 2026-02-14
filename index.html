@@ -1764,7 +1764,7 @@
             {id: 135, name: "Apurva", sex: "Female", born: "", until: "", fatherId: 132, motherId: 133, imageId: ""}
         ];
         
-        console.log('🌳 Family Tree App v3.2.1 - DEBUG - Loaded');
+        console.log('🌳 Family Tree App v3.2.2 - Loaded');
         console.log('📊 Initial family data count:', familyData.length);
         
         let personMap = {};
@@ -2397,13 +2397,15 @@
                         <div class="spouse-pair">
                             ${cardHtml}
                             ${spouseCardHtml}
-                        </div>`;
+                        </div>
+                    </div>`;
                 } else {
                     console.log('👤 Rendering single person:', person.name);
                     console.log('   🔘 Adding toggle for person ID:', person.id, 'at generation:', generation);
                     output += `<div class="tree-node" data-generation="${generation}">
                         <div class="fold-toggle expanded" data-person-id="${person.id}" onclick="toggleFold('fold-${person.id}', event)"></div>
-                        <div class="single-person">${cardHtml}</div>`;
+                        <div class="single-person">${cardHtml}</div>
+                    </div>`;
                 }
                 
                 // Render children
@@ -2423,7 +2425,6 @@
                     output += '</div>';
                 }
                 
-                output += '</div>';
                 return output;
             }
             
@@ -3919,7 +3920,7 @@ return `
     </script>
     
     <!-- Version Info -->
-    <div class="version-info">v3.2.1 - DEBUG - 2025-02-12</div>
+    <div class="version-info">v3.2.2 - 2025-02-12</div>
     
     <!-- Data Manager Modal -->
     <div class="data-manager-modal" id="dataManagerModal" style="display: none; visibility: hidden; opacity: 0; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 200000;">
