@@ -1504,6 +1504,7 @@
                 <button class="control-btn" onclick="toggleRelationshipMode(); closeMobileSidebarIfNeeded();" id="relationshipBtn">Find Relationship</button>
                 <button class="control-btn" onclick="openDataManager(); closeMobileSidebarIfNeeded();" id="dataManagerBtn">Data Manager</button>
                 <button class="control-btn" onclick="toggleDebugMode(); closeMobileSidebarIfNeeded();" id="debugBtn">Debug</button>
+                <button class="control-btn" onclick="toggleMobileLayout(); closeMobileSidebarIfNeeded();" id="mobileLayoutBtn">Mobile Layout: OFF</button>
                 <button class="control-btn" onclick="openThemeSelector(); closeMobileSidebarIfNeeded();" id="themeBtn">Theme Selector</button>
             </div>
             
@@ -1696,7 +1697,7 @@
             {id: 135, name: "Apurva", sex: "Female", born: "", until: "", fatherId: 132, motherId: 133, imageId: ""}
         ];
         
-        console.log('🌳 Family Tree App v3.0.0 - Loaded');
+        console.log('🌳 Family Tree App v3.0.2 - Loaded');
         console.log('📊 Initial family data count:', familyData.length);
         
         let personMap = {};
@@ -1882,6 +1883,7 @@
         }
         
         let selectedPerson = null;
+        let relationshipPath = new Set(); // For highlighting relationship paths
         let filteredPeople = [...familyData];
         let expandedNodes = new Set();
         let maxDepth = 2;
@@ -2198,19 +2200,42 @@
             }, 200);
         }
         
+        // Mobile layout toggle (for testing on desktop)
+        let forceMobileLayout = false;
+        
+        function toggleMobileLayout() {
+            forceMobileLayout = !forceMobileLayout;
+            const btn = document.getElementById('mobileLayoutBtn');
+            btn.textContent = `Mobile Layout: ${forceMobileLayout ? 'ON' : 'OFF'}`;
+            btn.style.background = forceMobileLayout ? 
+                'linear-gradient(135deg, rgba(244, 162, 97, 0.3), rgba(244, 162, 97, 0.2))' : 
+                'linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.08))';
+            console.log('🔄 Mobile layout toggled:', forceMobileLayout ? 'ON' : 'OFF');
+            renderTree();
+        }
+        
         // Mobile detection
         function isMobileView() {
-            return window.innerWidth <= 768;
+            return forceMobileLayout || window.innerWidth <= 768;
         }
         
         // Mobile vertical tree renderer
         function renderMobileTree(rootPerson) {
+            console.log('📱 renderMobileTree called with:', rootPerson?.name || 'null');
             let html = '';
             const rendered = new Set();
             
             function renderPersonMobile(person, generation = 0) {
-                if (!person || rendered.has(person.id)) return '';
+                if (!person) {
+                    console.warn('⚠️ renderPersonMobile called with null person');
+                    return '';
+                }
+                if (rendered.has(person.id)) {
+                    console.log('⏭️ Skipping already rendered:', person.name);
+                    return '';
+                }
                 rendered.add(person.id);
+                console.log('✏️ Rendering:', person.name, 'at generation', generation);
                 
                 let output = '';
                 const spouse = person.spouseId ? personMap[person.spouseId] : null;
@@ -2221,6 +2246,7 @@
                 const spouseCardHtml = hasSpouse ? renderPersonCard(spouse, generation) : '';
                 
                 if (hasSpouse) {
+                    console.log('💑 Rendering spouse pair:', person.name, '&', spouse.name);
                     rendered.add(spouse.id);
                     output += `<div class="tree-node" data-generation="${generation}">
                         <div class="spouse-pair">
@@ -2237,6 +2263,8 @@
                     (p.fatherId === person.id || p.motherId === person.id) &&
                     !rendered.has(p.id)
                 );
+                
+                console.log('👶 Children of', person.name, ':', children.length);
                 
                 if (children.length > 0) {
                     output += '<div class="children-container">';
@@ -2267,7 +2295,10 @@
                 </div>`;
             }
             
-            return renderPersonMobile(rootPerson, 0);
+            const result = renderPersonMobile(rootPerson, 0);
+            console.log('📱 Mobile tree HTML length:', result.length, 'characters');
+            console.log('📱 Total people rendered:', rendered.size);
+            return result;
         }
         
         function renderTree() {
@@ -3733,7 +3764,7 @@ return `
     </script>
     
     <!-- Version Info -->
-    <div class="version-info">v3.0.0 - 2025-02-12</div>
+    <div class="version-info">v3.0.2 - 2025-02-12</div>
     
     <!-- Data Manager Modal -->
     <div class="data-manager-modal" id="dataManagerModal" style="display: none; visibility: hidden; opacity: 0; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 200000;">
