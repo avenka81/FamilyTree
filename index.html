@@ -1083,7 +1083,7 @@
                 width: 100%;
             }
             
-            /* Indent based on generation */
+            /* Indent based on generation - restored */
             .tree-node[data-generation="0"] { margin-left: 0; }
             .tree-node[data-generation="1"] { margin-left: 20px; }
             .tree-node[data-generation="2"] { margin-left: 40px; }
@@ -1482,6 +1482,86 @@
             from { transform: translateX(100%); opacity: 0; }
             to { transform: translateX(0); opacity: 1; }
         }
+        
+        /* Code Folding Style - Vertical Line on Left */
+        .tree-root.mobile-vertical {
+            position: relative;
+            padding-left: 30px; /* Space for the left gutter */
+        }
+        
+        /* Continuous vertical line on the left */
+        .tree-root.mobile-vertical::before {
+            content: '';
+            position: absolute;
+            left: 15px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--gold-500);
+            opacity: 0.3;
+        }
+        
+        /* Toggle button ON the vertical line, centered with card */
+        .fold-toggle {
+            position: absolute;
+            left: -23px; /* Relative to tree-node - places it on the left vertical line */
+            top: 50%; /* Center vertically with the card */
+            transform: translateY(-50%); /* Perfect centering */
+            width: 18px;
+            height: 18px;
+            background: var(--gold-500);
+            border: 2px solid var(--bark-900);
+            border-radius: 3px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            color: var(--bark-900);
+            transition: all 0.2s;
+            z-index: 10;
+            user-select: none;
+        }
+        
+        .fold-toggle:hover {
+            background: var(--gold-400);
+            transform: translateY(-50%) scale(1.15);
+        }
+        
+        .fold-toggle.collapsed::before {
+            content: '+';
+        }
+        
+        .fold-toggle.expanded::before {
+            content: '−';
+        }
+        
+        /* Hide/show children */
+        .children-container.collapsed {
+            display: none !important;
+        }
+        
+        .children-container.expanded {
+            display: block !important;
+        }
+        
+        /* Tree node positioning */
+        .tree-node {
+            position: relative;
+        }
+        
+        /* Horizontal connector from vertical line to card */
+        .tree-node::before {
+            content: '';
+            position: absolute;
+            left: -15px; /* Adjusted for indent */
+            top: 50%;
+            width: 15px;
+            height: 2px;
+            background: var(--gold-500);
+            opacity: 0.3;
+        }
     </style>
 </head>
 <body>
@@ -1697,7 +1777,7 @@
             {id: 135, name: "Apurva", sex: "Female", born: "", until: "", fatherId: 132, motherId: 133, imageId: ""}
         ];
         
-        console.log('🌳 Family Tree App v3.0.2 - Loaded');
+        console.log('🌳 Family Tree App v3.1.2 - Loaded');
         console.log('📊 Initial family data count:', familyData.length);
         
         let personMap = {};
@@ -2214,6 +2294,53 @@
             renderTree();
         }
         
+        // Code folding style toggle for children
+        function toggleFold(foldId, event) {
+            event.stopPropagation(); // Prevent card click
+            const container = document.getElementById(foldId);
+            const toggle = event.currentTarget;
+            
+            if (container.classList.contains('expanded')) {
+                container.classList.remove('expanded');
+                container.classList.add('collapsed');
+                toggle.classList.remove('expanded');
+                toggle.classList.add('collapsed');
+                console.log('📁 Collapsed:', foldId);
+            } else {
+                container.classList.remove('collapsed');
+                container.classList.add('expanded');
+                toggle.classList.remove('collapsed');
+                toggle.classList.add('expanded');
+                console.log('📂 Expanded:', foldId);
+            }
+        }
+        
+        // Collapse all children in mobile view
+        function collapseAllMobile() {
+            document.querySelectorAll('.children-container.expanded').forEach(container => {
+                container.classList.remove('expanded');
+                container.classList.add('collapsed');
+            });
+            document.querySelectorAll('.fold-toggle.expanded').forEach(toggle => {
+                toggle.classList.remove('expanded');
+                toggle.classList.add('collapsed');
+            });
+            console.log('📁 All collapsed');
+        }
+        
+        // Expand all children in mobile view
+        function expandAllMobile() {
+            document.querySelectorAll('.children-container.collapsed').forEach(container => {
+                container.classList.remove('collapsed');
+                container.classList.add('expanded');
+            });
+            document.querySelectorAll('.fold-toggle.collapsed').forEach(toggle => {
+                toggle.classList.remove('collapsed');
+                toggle.classList.add('expanded');
+            });
+            console.log('📂 All expanded');
+        }
+        
         // Mobile detection
         function isMobileView() {
             return forceMobileLayout || window.innerWidth <= 768;
@@ -2267,7 +2394,9 @@
                 console.log('👶 Children of', person.name, ':', children.length);
                 
                 if (children.length > 0) {
-                    output += '<div class="children-container">';
+                    const foldId = `fold-${person.id}`;
+                    output += `<div class="fold-toggle expanded" onclick="toggleFold('${foldId}', event)"></div>`;
+                    output += `<div class="children-container expanded" id="${foldId}">`;
                     children.forEach(child => {
                         output += renderPersonMobile(child, generation + 1);
                     });
@@ -2667,13 +2796,19 @@ return `
         }
         
         function expandAll() {
-            familyData.forEach(p => expandedNodes.add(p.id));
-            maxDepth = 10;
-            renderTree();
+            if (isMobileView()) {
+                expandAllMobile();
+            } else {
+                familyData.forEach(p => expandedNodes.add(p.id));
+                maxDepth = 10;
+                renderTree();
+            }
         }
         
         function collapseAll() {
-            if (selectedPerson) {
+            if (isMobileView()) {
+                collapseAllMobile();
+            } else if (selectedPerson) {
                 // Show condensed view of selected person
                 expandedNodes.clear();
                 
@@ -3764,7 +3899,7 @@ return `
     </script>
     
     <!-- Version Info -->
-    <div class="version-info">v3.0.2 - 2025-02-12</div>
+    <div class="version-info">v3.1.2 - 2025-02-12</div>
     
     <!-- Data Manager Modal -->
     <div class="data-manager-modal" id="dataManagerModal" style="display: none; visibility: hidden; opacity: 0; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 200000;">
