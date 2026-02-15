@@ -1948,7 +1948,6 @@
     </div>
     
     <script>
-    console.log('🧪 PHASE 1: Testing familyData array only');
     
     // PHASE 1: Just the data array - no processing
     let familyData = [
@@ -2089,7 +2088,6 @@
             {id: 135, name: "Apurva", sex: "Female", born: "", until: "", fatherId: 132, motherId: 133, imageId: ""}
         ];
         
-        console.log('✅ PHASE 1: familyData loaded -', familyData.length, 'people');
         console.log('   First person:', familyData[0].name);
         console.log('   Last person:', familyData[familyData.length - 1].name);
         
@@ -2098,7 +2096,6 @@
         const DEBUG_MODE = false;
         const debug = (...args) => { if (DEBUG_MODE) console.log(...args); };
         
-        console.log('🧪 PHASE 4: Helper functions enabled');
         
         debug('📊 Initial family data count:', familyData.length);
         
@@ -2388,7 +2385,6 @@
             debug('👤 selectPerson called with ID:', personId);
             const person = personMap[personId];
             if (!person) {
-                console.warn('⚠️ Person not found:', personId);
                 return;
             }
             
@@ -2724,7 +2720,6 @@
             });
             
             if (nodesWithoutToggle.length > 0) {
-                console.warn('⚠️ Nodes WITHOUT toggles:', nodesWithoutToggle.length);
                 nodesWithoutToggle.forEach(node => {
                     debug('  Missing toggle on generation:', node.getAttribute('data-generation'));
                 });
@@ -2833,7 +2828,6 @@
                         rect: image.getBoundingClientRect()
                     });
                 } else {
-                    console.warn('⚠️ No image found in this card');
                 }
                 
                 if (content) {
@@ -2924,7 +2918,6 @@
         }
         
         function expandFamily(personId) {
-            console.log('🔄 Expanding family tree for person:', personId);
             const person = personMap[personId];
             if (!person) return;
             
@@ -2935,44 +2928,35 @@
         
         // Mobile vertical tree renderer
         function renderMobileTree(rootPerson) {
-            console.log('📱 START renderMobileTree:', rootPerson ? rootPerson.name : 'null');
             let html = '';
             const rendered = new Set();
             
             // Mobile-safe rendering: Limit depth to prevent crashes
             // Testing showed depth 4 can be unstable, depth 3 should be safer
             const MAX_DEPTH = 10; // Render full tree depth (safe with smart rendering)
-            console.log('🔒 Max render depth set to', MAX_DEPTH, 'for mobile compatibility');
             
             let totalPeopleRendered = 0; // Track total DOM elements created
             
             function renderPersonMobile(person, generation = 0) {
-                console.log('  → renderPersonMobile:', person ? person.name : 'null', 'gen:', generation);
                 if (!person) {
-                    console.warn('⚠️ renderPersonMobile called with null person');
                     return '';
                 }
                 if (rendered.has(person.id)) {
-                    console.log('  ⏭️ Already rendered:', person.name);
                     return '';
                 }
                 rendered.add(person.id);
                 totalPeopleRendered++; // Increment counter
-                console.log('  ✏️ Rendering:', person.name, 'at generation', generation, '(total so far:', totalPeopleRendered, ')');
                 
                 let output = '';
                 const spouse = person.spouseId ? personMap[person.spouseId] : null;
                 const hasSpouse = spouse && !rendered.has(spouse.id);
                 
-                console.log('  📝 Creating card HTML for:', person.name);
                 // Create person card HTML
                 const cardHtml = renderPersonCard(person, generation);
-                console.log('  ✅ Card HTML created');
                 const spouseCardHtml = hasSpouse ? renderPersonCard(spouse, generation) : '';
                 console.log('  ✅ Spouse card HTML created (if needed)');
                 
                 if (hasSpouse) {
-                    console.log('  💑 Rendering spouse pair');
                     rendered.add(spouse.id);
                     output += `<div class="tree-node" data-generation="${generation}">
                         <div class="fold-toggle expanded" data-person-id="${person.id}" onclick="toggleFold('fold-${person.id}', event)"></div>
@@ -2982,7 +2966,6 @@
                         </div>
                     </div>`;
                 } else {
-                    console.log('  👤 Rendering single person');
                     output += `<div class="tree-node" data-generation="${generation}">
                         <div class="fold-toggle expanded" data-person-id="${person.id}" onclick="toggleFold('fold-${person.id}', event)"></div>
                         <div class="single-person">${cardHtml}</div>
@@ -2991,18 +2974,15 @@
                 
                 // Render children up to max depth
                 if (generation < MAX_DEPTH) {
-                    console.log('  🔍 Finding children of:', person.name, '(depth', generation, '/', MAX_DEPTH, ')');
                     const children = familyData.filter(p => 
                         (p.fatherId === person.id || p.motherId === person.id) &&
                         !rendered.has(p.id)
                     );
                     
-                    console.log('  👶 Children found:', children.length, 'for', person.name);
                     
                     if (children.length > 0) {
                         const foldId = `fold-${person.id}`;
                         output += `<div class="children-container expanded" id="${foldId}">`;
-                        console.log('  🔄 Recursing into children...');
                         children.forEach((child, idx) => {
                             console.log('    Child', idx + 1, 'of', children.length, ':', child.name);
                             output += renderPersonMobile(child, generation + 1);
@@ -3011,10 +2991,8 @@
                         console.log('  ✅ Children rendering complete');
                     }
                 } else {
-                    console.log('  🛑 Max depth', MAX_DEPTH, 'reached - stopping to prevent mobile crash');
                 }
                 
-                console.log('  ← Returning from:', person.name);
                 return output;
             }
             
@@ -3038,9 +3016,6 @@
             }
             
             const result = renderPersonMobile(rootPerson, 0);
-            console.log('📱 Mobile tree HTML length:', result.length, 'characters');
-            console.log('📱 Total people rendered in this tree:', totalPeopleRendered);
-            console.log('📱 Unique people (rendered set):', rendered.size);
             return result;
         }
         
@@ -3125,12 +3100,10 @@
             rootsWithDescendants.forEach((rootInfo, index) => {
                 if (index === 0) {
                     // First tree (largest) - render fully with depth limit
-                    console.log(`🌳 Rendering FULL tree: ${rootInfo.root.name} (${rootInfo.descendants} descendants)`);
                     const treeHTML = renderMobileTree(rootInfo.root);
                     allTreesHTML += treeHTML;
                 } else {
                     // Other trees - render as collapsed summary card
-                    console.log(`📦 Rendering COLLAPSED card: ${rootInfo.root.name} (${rootInfo.descendants} descendants)`);
                     const collapsedCard = renderCollapsedFamilyCard(rootInfo.root, rootInfo.descendants);
                     allTreesHTML += collapsedCard;
                 }
@@ -3145,10 +3118,6 @@
             
             // Count total rendered cards in DOM
             const totalCards = container.querySelectorAll('.node-card').length;
-            console.log('📊 GRAND TOTAL: ', totalCards, 'people cards rendered');
-            console.log('📊 Full trees:', 1);
-            console.log('📊 Collapsed cards:', rootsWithDescendants.length - 1);
-            console.log('📊 HTML size:', Math.round(allTreesHTML.length / 1024), 'KB');
             
             debug('✅ Rendered', rootsWithDescendants.length, 'family trees');
         }
@@ -3528,7 +3497,6 @@ return `
             }
         }
         
-        console.log('✅ PHASE 4: All helper functions loaded successfully!');
         console.log('   personMap created:', Object.keys(personMap).length, 'people');
         console.log('   Generations calculated');
         
@@ -4435,7 +4403,6 @@ return `
                 
                 // Force remove active class if present
                 if (modal.classList.contains('active')) {
-                    console.warn('⚠️ Modal had active class on load! Removing...');
                     modal.classList.remove('active');
                 }
             }
@@ -4515,7 +4482,6 @@ return `
             }
             
             // Try to load from project CSV file
-            console.log('🔄 Attempting to load data from project file...');
             try {
                 const response = await fetch('family_tree_for_google_sheets.csv');
                 if (response.ok) {
@@ -4547,46 +4513,11 @@ return `
             }
         });
         
-    console.log('✅ Full app loaded successfully with MAX_DEPTH=10');
-    
-    // DEBUG: Log actual computed positions
-    setTimeout(() => {
-        const treeRoot = document.querySelector('.tree-root.mobile-vertical');
-        const toggles = document.querySelectorAll('.fold-toggle');
-        
-        if (treeRoot) {
-            const rootStyles = window.getComputedStyle(treeRoot);
-            const lineStyles = window.getComputedStyle(treeRoot, '::before');
-            console.log('📏 TREE-ROOT position:', rootStyles.position);
-            console.log('📏 TREE-ROOT padding-left:', rootStyles.paddingLeft);
-            console.log('📏 VERTICAL LINE ::before left:', lineStyles.left);
-            console.log('📏 VERTICAL LINE ::before display:', lineStyles.display);
-            console.log('📏 VERTICAL LINE ::before content:', lineStyles.content);
-            console.log('📏 VERTICAL LINE ::before background:', lineStyles.background);
-        }
-        
-        if (toggles.length > 0) {
-            const toggle = toggles[0];
-            const toggleStyles = window.getComputedStyle(toggle);
-            const rect = toggle.getBoundingClientRect();
-            const parent = toggle.parentElement;
-            const parentRect = parent.getBoundingClientRect();
-            
-            console.log('📏 TOGGLE[0] CSS left:', toggleStyles.left);
-            console.log('📏 TOGGLE[0] margin-left:', toggleStyles.marginLeft);
-            console.log('📏 TOGGLE[0] position:', toggleStyles.position);
-            console.log('📏 TOGGLE[0] transform:', toggleStyles.transform);
-            console.log('📏 TOGGLE[0] actual rect.left:', rect.left + 'px from viewport');
-            console.log('📏 PARENT rect.left:', parentRect.left + 'px from viewport');
-            console.log('📏 TOGGLE offset from parent:', (rect.left - parentRect.left) + 'px');
-        }
-        
-        console.log('📏 Total toggles found:', toggles.length);
-    }, 1000);
+    console.log('✅ Family tree loaded successfully');
     </script>
     
     <!-- Version Info -->
-    <div class="version-info">v6.2.4-DEBUG - Enhanced logging + line at 10px</div>
+    <div class="version-info">v6.3</div>
     
     <!-- Data Manager Modal -->
     <div class="data-manager-modal" id="dataManagerModal" style="display: none; visibility: hidden; opacity: 0; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 200000;">
