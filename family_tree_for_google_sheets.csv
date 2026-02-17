@@ -4,8 +4,8 @@ Person ID,Person Name,Sex,Born,Until,Spouse ID,Spouse Name,Father ID,Father's Na
 3,A R Seshadri,Male,1865,,4,Seshambal,1,Ramaswamy,2,Meenakshy,,G34,,Shastrigal
 4,Seshambal,Female,1871,,3,A R Seshadri,,,,,1RoPhFz3ZtCEYGTLpPUjPwvCJLK3P9zol,G43,https://drive.google.com/file/d/1RoPhFz3ZtCEYGTLpPUjPwvCJLK3P9zol/view?usp=drive_link,
 5,A S Ramaswamy,Male,1887,,,,3,A R Seshadri,4,Seshambal,,G5,,"Teacher, Inspector of schools"
-6,A S Mahadevan,Male,1889,1979,8,Parvathy,3,A R Seshadri,4,Seshambal,,G68,,
-7,A S Krishnan,Male,1891,,137,Pachai Nayagi,3,A R Seshadri,4,Seshambal,,G7,,
+6,A S Mahadevan,Male,1889,1979,8,Parvathy,,,,,,G68,,
+7,A S Krishnan,Male,1891,,137,Pachai Nayagi,,,,,,G7,,
 8,Parvathy,Female,,,6,A S Mahadevan,,,,,,G86,,
 9,Seshambal - Parakulam,Female,,,16,Raghunathan,6,A S Mahadevan,8,Parvathy,,G916,,
 10,Subramaniam,Male,,,71,Seethalakshmi,6,A S Mahadevan,8,Parvathy,,G1071,,
