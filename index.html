@@ -23,6 +23,125 @@
             --blue-500: #4a9eff;      /* Bright blue for male */
         }
         
+        /* Launch/Security Screen */
+        #launchScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(165deg, var(--bark-900) 0%, var(--bark-800) 50%, #252525 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+        
+        #launchScreen.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+        
+        .launch-container {
+            background: rgba(26, 26, 26, 0.95);
+            border: 2px solid var(--gold-500);
+            border-radius: 20px;
+            padding: 50px 40px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            text-align: center;
+        }
+        
+        .launch-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--gold-500);
+            margin-bottom: 10px;
+        }
+        
+        .launch-subtitle {
+            color: var(--parchment);
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .launch-input {
+            width: 100%;
+            padding: 15px 20px;
+            font-size: 18px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid var(--gold-500);
+            border-radius: 10px;
+            color: var(--cream);
+            text-align: center;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+        
+        .launch-input:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.15);
+            border-color: var(--gold-400);
+            box-shadow: 0 0 20px rgba(244, 162, 97, 0.3);
+        }
+        
+        .launch-input::placeholder {
+            color: rgba(245, 245, 245, 0.4);
+        }
+        
+        .launch-btn {
+            width: 100%;
+            padding: 15px;
+            font-size: 18px;
+            font-weight: 600;
+            background: var(--gold-500);
+            color: var(--bark-900);
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .launch-btn:hover {
+            background: var(--gold-400);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(244, 162, 97, 0.4);
+        }
+        
+        .launch-btn:active {
+            transform: translateY(0);
+        }
+        
+        .launch-options {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(244, 162, 97, 0.3);
+            font-size: 14px;
+            color: var(--parchment);
+            line-height: 1.8;
+        }
+        
+        .launch-option {
+            color: var(--gold-400);
+            font-weight: 600;
+        }
+        
+        .launch-error {
+            color: var(--rose-500);
+            margin-top: 15px;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .launch-error.show {
+            opacity: 1;
+        }
+        
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
         body {
@@ -1748,6 +1867,31 @@
             transform: scale(1.1);
         }
         
+        .person-detail-view-btn {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            padding: 10px 20px;
+            background: var(--blue-500);
+            border: none;
+            border-radius: 20px;
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            z-index: 1;
+            transition: all 0.3s ease;
+        }
+        
+        .person-detail-view-btn:hover {
+            background: #3a8eef;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(74, 158, 255, 0.3);
+        }
+        
         .person-detail-header {
             display: flex;
             gap: 20px;
@@ -1907,6 +2051,31 @@
     </style>
 </head>
 <body>
+    <!-- Launch/Security Screen -->
+    <div id="launchScreen">
+        <div class="launch-container">
+            <div class="launch-title">Heritage Tree</div>
+            <div class="launch-subtitle">Enter access code to view family tree</div>
+            <input 
+                type="text" 
+                id="launchInput" 
+                class="launch-input" 
+                placeholder="Enter tree code..."
+                autocomplete="off"
+                autofocus
+            >
+            <button class="launch-btn" onclick="validateAndLaunch()">Enter</button>
+            <div class="launch-error" id="launchError">Invalid code. Please try again.</div>
+            <div class="launch-options">
+                Valid codes:<br>
+                <span class="launch-option">Kochi</span> • 
+                <span class="launch-option">Ayalur</span> • 
+                <span class="launch-option">AVR</span> • 
+                <span class="launch-option">All</span>
+            </div>
+        </div>
+    </div>
+    
     <!-- Mobile Sidebar Toggle -->
     <div class="mobile-overlay" onclick="toggleMobileSidebar()"></div>
     
@@ -1923,6 +2092,7 @@
             <!-- Controls Section in Sidebar -->
             <div class="sidebar-controls">
                 <button class="control-btn" onclick="resetView(); closeMobileSidebarIfNeeded();">Reset View</button>
+                <button class="control-btn" onclick="expandAll(); closeMobileSidebarIfNeeded();">Expand All</button>
                 <button class="control-btn" onclick="openDataManager(); closeMobileSidebarIfNeeded();" id="dataManagerBtn">Data Manager</button>
                 <button class="control-btn" onclick="openThemeSelector(); closeMobileSidebarIfNeeded();" id="themeBtn">Theme Selector</button>
             </div>
@@ -1948,6 +2118,15 @@
     </div>
     
     <script>
+    
+    // ===== GLOBAL CONFIGURATION =====
+    
+    // Tree view configuration - controls which tree to show and initial depth
+    let currentTreeConfig = {
+        mode: null,  // 'kochi', 'ayalur', 'avr', 'all'
+        rootPersonId: null,
+        initialDepth: 3  // Easy to change - controls how many generations to show initially
+    };
     
     // PHASE 1: Just the data array - no processing
     let familyData = [
@@ -2098,6 +2277,9 @@
         
         
         debug('📊 Initial family data count:', familyData.length);
+        
+        // Note: localStorage loading happens AFTER CSV file is checked in DOMContentLoaded
+        // This ensures CSV file takes precedence
         
         let personMap = {};
         familyData.forEach(p => personMap[p.id] = p);
@@ -2420,6 +2602,7 @@
             let html = `
                 <div class="person-detail-content" onclick="event.stopPropagation()">
                     <button class="person-detail-close" onclick="closePersonDetail()">×</button>
+                    <button class="person-detail-view-btn" onclick="viewTreeFromPerson(${person.id})">👁️ View Tree</button>
                         
                         <div class="person-detail-header">
                             ${imgUrl ? `<img src="${imgUrl}" class="person-detail-image" onerror="this.style.display='none'">` : ''}
@@ -2931,9 +3114,8 @@
             let html = '';
             const rendered = new Set();
             
-            // Mobile-safe rendering: Limit depth to prevent crashes
-            // Testing showed depth 4 can be unstable, depth 3 should be safer
-            const MAX_DEPTH = 10; // Render full tree depth (safe with smart rendering)
+            // Use the configured initial depth from currentTreeConfig
+            const MAX_DEPTH = currentTreeConfig.initialDepth || 10;
             
             let totalPeopleRendered = 0; // Track total DOM elements created
             
@@ -2972,25 +3154,32 @@
                     </div>`;
                 }
                 
-                // Render children up to max depth
-                if (generation < MAX_DEPTH) {
-                    const children = familyData.filter(p => 
-                        (p.fatherId === person.id || p.motherId === person.id) &&
-                        !rendered.has(p.id)
-                    );
+                // Render children - show up to MAX_DEPTH, start collapsed at MAX_DEPTH
+                const children = familyData.filter(p => 
+                    (p.fatherId === person.id || p.motherId === person.id) &&
+                    !rendered.has(p.id)
+                );
+                
+                if (children.length > 0) {
+                    const foldId = `fold-${person.id}`;
+                    // At MAX_DEPTH-1, children containers should start collapsed
+                    const containerClass = generation >= (MAX_DEPTH - 1) ? 'collapsed' : 'expanded';
+                    const toggleClass = generation >= (MAX_DEPTH - 1) ? 'collapsed' : 'expanded';
+                    const toggleSymbol = generation >= (MAX_DEPTH - 1) ? '+' : '−';
                     
-                    
-                    if (children.length > 0) {
-                        const foldId = `fold-${person.id}`;
-                        output += `<div class="children-container expanded" id="${foldId}">`;
-                        children.forEach((child, idx) => {
-                            console.log('    Child', idx + 1, 'of', children.length, ':', child.name);
-                            output += renderPersonMobile(child, generation + 1);
-                        });
-                        output += '</div>';
-                        console.log('  ✅ Children rendering complete');
+                    // Update the toggle button to reflect collapsed state if needed
+                    if (generation >= (MAX_DEPTH - 1)) {
+                        output = output.replace(
+                            `<div class="fold-toggle expanded" data-person-id="${person.id}"`,
+                            `<div class="fold-toggle ${toggleClass}" data-person-id="${person.id}"`
+                        );
                     }
-                } else {
+                    
+                    output += `<div class="children-container ${containerClass}" id="${foldId}">`;
+                    children.forEach((child, idx) => {
+                        output += renderPersonMobile(child, generation + 1);
+                    });
+                    output += '</div>';
                 }
                 
                 return output;
@@ -3021,6 +3210,19 @@
         
         function renderTree() {
             const container = document.getElementById('treeContainer');
+            
+            // CHECK: If we have a configured root person (Kochi, Ayalur, AVR modes)
+            if (currentTreeConfig.rootPersonId) {
+                const configuredRoot = personMap[currentTreeConfig.rootPersonId];
+                if (configuredRoot) {
+                    console.log('🎯 Rendering configured tree for:', configuredRoot.name, '(ID:', currentTreeConfig.rootPersonId, ')');
+                    const treeHTML = renderMobileTree(configuredRoot);
+                    container.innerHTML = `<div class="tree-root mobile-vertical">${treeHTML}</div>`;
+                    return;
+                }
+            }
+            
+            // Otherwise, use the normal "All" mode logic
             const roots = familyData.filter(p => !p.fatherId && !p.motherId);
             
             debug('Rendering tree, roots found:', roots.length);
@@ -4069,6 +4271,10 @@ return `
                 personMap = {};
                 familyData.forEach(p => personMap[p.id] = p);
                 
+                // Save to localStorage for persistence
+                localStorage.setItem('familyTreeData', JSON.stringify(data));
+                console.log('💾 Data saved to localStorage:', data.length, 'people');
+                
                 alert('Data imported successfully!');
                 hideImportTextArea();
                 refreshPeopleList();
@@ -4109,6 +4315,10 @@ return `
                     familyData = data;
                     personMap = {};
                     familyData.forEach(p => personMap[p.id] = p);
+                    
+                    // Save to localStorage for persistence
+                    localStorage.setItem('familyTreeData', JSON.stringify(data));
+                    console.log('💾 Data saved to localStorage:', data.length, 'people');
                     
                     alert('Data imported successfully!');
                     refreshPeopleList();
@@ -4203,6 +4413,10 @@ return `
                     
                     familyData.forEach(p => personMap[p.id] = p);
                     debug('✅ personMap rebuilt with', Object.keys(personMap).length, 'people');
+                    
+                    // Save to localStorage for persistence
+                    localStorage.setItem('familyTreeData', JSON.stringify(data));
+                    console.log('💾 Data saved to localStorage:', data.length, 'people');
                     
                     document.getElementById('sheetsStatus').innerHTML = `✅ Loaded ${data.length} people from Google Sheets!`;
                     
@@ -4482,6 +4696,7 @@ return `
             }
             
             // Try to load from project CSV file
+            console.log('🔍 Attempting to load family_tree_for_google_sheets.csv...');
             try {
                 const response = await fetch('family_tree_for_google_sheets.csv');
                 if (response.ok) {
@@ -4489,10 +4704,14 @@ return `
                     const data = parseGoogleSheetCSV(csvData);
                     
                     if (data && data.length > 0) {
-                        debug('✅ Loaded', data.length, 'people from project CSV file');
+                        console.log('✅ Loaded', data.length, 'people from family_tree_for_google_sheets.csv');
                         familyData = data;
                         personMap = {};
                         familyData.forEach(p => personMap[p.id] = p);
+                        
+                        // Save to localStorage for persistence
+                        localStorage.setItem('familyTreeData', JSON.stringify(data));
+                        console.log('💾 Data saved to localStorage');
                         
                         // Recalculate generations
                         familyData.forEach(p => {
@@ -4503,21 +4722,100 @@ return `
                         displayPeopleList();
                         renderTree();
                     } else {
-                        console.log('⚠️ Project CSV file empty or invalid, using hardcoded data');
+                        console.log('⚠️ CSV file empty or invalid, using hardcoded data');
                     }
                 } else {
-                    debug('ℹ️ Project CSV file not found, using hardcoded data');
+                    console.log('ℹ️ family_tree_for_google_sheets.csv not found (status:', response.status, '), using hardcoded data');
                 }
             } catch (error) {
-                debug('ℹ️ Could not load project CSV file, using hardcoded data:', error.message);
+                console.log('ℹ️ Could not load CSV file:', error.message);
+                console.log('Using hardcoded data instead');
             }
         });
         
     console.log('✅ Family tree loaded successfully');
+    
+    // ===== LAUNCH SCREEN & TREE VIEW CONFIGURATION =====
+    
+    // Handle Enter key in launch input
+    document.getElementById('launchInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            validateAndLaunch();
+        }
+    });
+    
+    function validateAndLaunch() {
+        const input = document.getElementById('launchInput').value.trim().toLowerCase();
+        const errorEl = document.getElementById('launchError');
+        
+        let config = null;
+        
+        if (input === 'kochi') {
+            config = { mode: 'kochi', rootPersonId: 7, initialDepth: 3 };
+        } else if (input === 'ayalur') {
+            config = { mode: 'ayalur', rootPersonId: 6, initialDepth: 3 };
+        } else if (input === 'avr') {
+            config = { mode: 'avr', rootPersonId: 300, initialDepth: 3 };
+        } else if (input === 'all') {
+            config = { mode: 'all', rootPersonId: null, initialDepth: 10 };
+        } else {
+            // Invalid code
+            errorEl.classList.add('show');
+            setTimeout(() => errorEl.classList.remove('show'), 3000);
+            return;
+        }
+        
+        // Valid code - hide launch screen and load tree
+        currentTreeConfig = config;
+        console.log('🔓 Launch validated:', config.mode, 'Root ID:', config.rootPersonId);
+        document.getElementById('launchScreen').classList.add('hidden');
+        
+        // Set selected person and render
+        if (config.rootPersonId) {
+            selectedPerson = personMap[config.rootPersonId];
+            console.log('👤 Selected person set to:', selectedPerson ? selectedPerson.name : 'NOT FOUND');
+        }
+        renderTree();
+    }
+    
+    function viewTreeFromPerson(personId) {
+        // Close the person detail modal
+        closePersonDetail();
+        
+        // Set this person as selected
+        selectedPerson = personMap[personId];
+        
+        // Update config to use limited depth
+        currentTreeConfig.rootPersonId = personId;
+        currentTreeConfig.initialDepth = 3;
+        
+        // Render tree from this person
+        renderTree();
+        
+        // Scroll to top
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    
+    function expandAll() {
+        // Find all collapsed children containers and expand them
+        const collapsedContainers = document.querySelectorAll('.children-container.collapsed');
+        collapsedContainers.forEach(container => {
+            container.classList.remove('collapsed');
+            container.classList.add('expanded');
+        });
+        
+        // Update all toggle buttons to show minus
+        const toggles = document.querySelectorAll('.fold-toggle.collapsed');
+        toggles.forEach(toggle => {
+            toggle.classList.remove('collapsed');
+            toggle.classList.add('expanded');
+            toggle.textContent = '−';
+        });
+    }
     </script>
     
     <!-- Version Info -->
-    <div class="version-info">v6.3</div>
+    <div class="version-info">v7.1.1</div>
     
     <!-- Data Manager Modal -->
     <div class="data-manager-modal" id="dataManagerModal" style="display: none; visibility: hidden; opacity: 0; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 200000;">
