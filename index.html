@@ -1867,29 +1867,36 @@
             transform: scale(1.1);
         }
         
-        .person-detail-view-btn {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            padding: 10px 20px;
-            background: var(--blue-500);
-            border: none;
-            border-radius: 20px;
-            color: white;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
+        .person-detail-meta {
             display: flex;
             align-items: center;
-            gap: 5px;
-            z-index: 1;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+        
+        .person-detail-view-btn {
+            position: relative;
+            padding: 8px 16px;
+            background: var(--gold-500);
+            border: 2px solid var(--bark-900);
+            border-radius: 6px;
+            color: var(--bark-900);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
             transition: all 0.3s ease;
+            white-space: nowrap;
+            margin-left: auto; /* Push to the right */
         }
         
         .person-detail-view-btn:hover {
-            background: #3a8eef;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(74, 158, 255, 0.3);
+            background: var(--gold-400);
+            transform: translateY(-1px);
+            box-shadow: 0 3px 10px rgba(244, 162, 97, 0.3);
         }
         
         .person-detail-header {
@@ -2602,14 +2609,16 @@
             let html = `
                 <div class="person-detail-content" onclick="event.stopPropagation()">
                     <button class="person-detail-close" onclick="closePersonDetail()">×</button>
-                    <button class="person-detail-view-btn" onclick="viewTreeFromPerson(${person.id})">👁️ View Tree</button>
                         
                         <div class="person-detail-header">
                             ${imgUrl ? `<img src="${imgUrl}" class="person-detail-image" onerror="this.style.display='none'">` : ''}
                             <div class="person-detail-info">
                                 <h2>${person.name}</h2>
-                                <div class="person-detail-years">${years}</div>
-                                <div class="person-detail-gender">${person.sex}</div>
+                                <div class="person-detail-meta">
+                                    <div class="person-detail-years">${years}</div>
+                                    <div class="person-detail-gender">${person.sex}</div>
+                                    <button class="person-detail-view-btn" onclick="event.stopPropagation(); viewTreeFromPerson(${person.id})">View Tree</button>
+                                </div>
                             </div>
                         </div>
                         
@@ -4722,14 +4731,54 @@ return `
                         displayPeopleList();
                         renderTree();
                     } else {
-                        console.log('⚠️ CSV file empty or invalid, using hardcoded data');
+                        console.log('⚠️ CSV file empty or invalid, trying project file...');
+                        await loadFromProjectFile();
                     }
                 } else {
-                    console.log('ℹ️ family_tree_for_google_sheets.csv not found (status:', response.status, '), using hardcoded data');
+                    console.log('ℹ️ family_tree_for_google_sheets.csv not found (status:', response.status, '), trying project file...');
+                    await loadFromProjectFile();
                 }
             } catch (error) {
                 console.log('ℹ️ Could not load CSV file:', error.message);
-                console.log('Using hardcoded data instead');
+                console.log('Trying project file fallback...');
+                await loadFromProjectFile();
+            }
+            
+            async function loadFromProjectFile() {
+                try {
+                    const projectResponse = await fetch('/mnt/project/family_tree_for_google_sheets.csv');
+                    if (projectResponse.ok) {
+                        const csvData = await projectResponse.text();
+                        const data = parseGoogleSheetCSV(csvData);
+                        
+                        if (data && data.length > 0) {
+                            console.log('✅ Loaded', data.length, 'people from PROJECT file /mnt/project/family_tree_for_google_sheets.csv');
+                            familyData = data;
+                            personMap = {};
+                            familyData.forEach(p => personMap[p.id] = p);
+                            
+                            // Save to localStorage for persistence
+                            localStorage.setItem('familyTreeData', JSON.stringify(data));
+                            console.log('💾 Data saved to localStorage');
+                            
+                            // Recalculate generations
+                            familyData.forEach(p => {
+                                p.generation = calculateGeneration(p);
+                            });
+                            
+                            // Update UI
+                            displayPeopleList();
+                            renderTree();
+                        } else {
+                            console.log('⚠️ Project file empty or invalid, using hardcoded data');
+                        }
+                    } else {
+                        console.log('ℹ️ Project file not found, using hardcoded data');
+                    }
+                } catch (projectError) {
+                    console.log('ℹ️ Could not load project file:', projectError.message);
+                    console.log('Using hardcoded data');
+                }
             }
         });
         
@@ -4815,7 +4864,7 @@ return `
     </script>
     
     <!-- Version Info -->
-    <div class="version-info">v7.1.1</div>
+    <div class="version-info">v7.3.0</div>
     
     <!-- Data Manager Modal -->
     <div class="data-manager-modal" id="dataManagerModal" style="display: none; visibility: hidden; opacity: 0; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 200000;">
