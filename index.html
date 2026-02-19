@@ -2053,7 +2053,7 @@
                 <span class="launch-option">AVR</span> • 
                 <span class="launch-option">All</span>
             </div>
-            <div style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); color: var(--gold-300); font-size: 12px; opacity: 0.7;">v7.9.1</div>
+            <div style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); color: var(--gold-300); font-size: 12px; opacity: 0.7;">v7.10.0</div>
         </div>
     </div>
     
@@ -2072,8 +2072,7 @@
             
             <!-- Controls Section in Sidebar -->
             <div class="sidebar-controls">
-                <button class="control-btn" onclick="resetView(); closeMobileSidebarIfNeeded();">Reset View</button>
-                <button class="control-btn" onclick="expandAll(); closeMobileSidebarIfNeeded();">Expand All</button>
+                <button class="control-btn" onclick="switchView(); closeMobileSidebarIfNeeded();">Switch View</button>
                 <button class="control-btn" onclick="openDataManager(); closeMobileSidebarIfNeeded();" id="dataManagerBtn">Data Manager</button>
                 <button class="control-btn" onclick="openThemeSelector(); closeMobileSidebarIfNeeded();" id="themeBtn">Theme Selector</button>
             </div>
@@ -3264,22 +3263,6 @@
             debug('📁 All collapsed');
         }
         
-        // Expand all children in vertical view
-        function expandAllMobile() {
-            // Set all toggles to expanded
-            document.querySelectorAll('.fold-toggle.collapsed').forEach(toggle => {
-                toggle.classList.remove('collapsed');
-                toggle.classList.add('expanded');
-            });
-            
-            // Show all children-containers
-            document.querySelectorAll('.children-container').forEach(container => {
-                container.style.display = 'block';
-            });
-            
-            debug('📂 All expanded');
-        }
-        
         // Mobile detection
         function isMobileView() {
             return forceMobileLayout || window.innerWidth <= 768;
@@ -3823,29 +3806,23 @@ return `
             document.body.classList.remove('sidebar-open');
         }
         
-        function resetView() {
-            selectedPerson = null;
-            expandedNodes.clear();
-            hiddenDirections.clear(); // Clear all hidden junction directions
-            maxDepth = 2;
-            renderTree();
+        function switchView() {
+            // Show the launch screen again so user can select a different tree
+            document.getElementById('launchScreen').classList.remove('hidden');
             
-            // Clear main search bar
-            const searchInput = document.getElementById('mainSearchInput');
-            if (searchInput) {
-                searchInput.value = '';
-                filterTreeBySearch('');
+            // Clear the input
+            const launchInput = document.getElementById('launchInput');
+            if (launchInput) {
+                launchInput.value = '';
+                launchInput.focus();
             }
-        }
-        
-        function expandAll() {
-            if (isMobileView()) {
-                expandAllMobile();
-            } else {
-                familyData.forEach(p => expandedNodes.add(p.id));
-                maxDepth = 10;
-                renderTree();
-            }
+            
+            // Reset tree config
+            currentTreeConfig = {
+                mode: null,
+                rootPersonId: null,
+                initialDepth: 3
+            };
         }
         
         function collapseAll() {
@@ -5034,23 +5011,6 @@ return `
         
         // Scroll to top
         window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-    
-    function expandAll() {
-        // Find all collapsed children containers and expand them
-        const collapsedContainers = document.querySelectorAll('.children-container.collapsed');
-        collapsedContainers.forEach(container => {
-            container.classList.remove('collapsed');
-            container.classList.add('expanded');
-        });
-        
-        // Update all toggle buttons to show minus
-        const toggles = document.querySelectorAll('.fold-toggle.collapsed');
-        toggles.forEach(toggle => {
-            toggle.classList.remove('collapsed');
-            toggle.classList.add('expanded');
-            toggle.textContent = '−';
-        });
     }
     </script>
     
