@@ -2082,7 +2082,7 @@
             </select>
             <button class="launch-btn" onclick="validateAndLaunch()">View Tree</button>
             <div class="launch-error" id="launchError">Invalid selection. Please try again.</div>
-            <div style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); color: var(--gold-300); font-size: 12px; opacity: 0.7;">v7.13.0</div>
+            <div style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); color: var(--gold-300); font-size: 12px; opacity: 0.7;">v7.13.1</div>
         </div>
     </div>
     
@@ -3923,7 +3923,7 @@ return `
             } else if (treeCode === 'radha') {
                 config = { mode: 'radha', rootPersonId: 600, initialDepth: 3 };
             } else if (treeCode === '80') {
-                config = { mode: '80', rootPersonId: 600, initialDepth: 3, specificIds: [600, 21, 11, 99, 143, 185, 155, 157, 700] };
+                config = { mode: '80', rootPersonId: 600, initialDepth: 3, specificIds: [600, 21, 11, 99, 143, 185, 155, 157, 390, 700] };
             } else if (treeCode === 'all') {
                 config = { mode: 'all', rootPersonId: null, initialDepth: 10 };
             }
@@ -5094,7 +5094,7 @@ return `
         } else if (input === 'radha') {
             config = { mode: 'radha', rootPersonId: 600, initialDepth: 3 };
         } else if (input === '80') {
-            config = { mode: '80', rootPersonId: 600, initialDepth: 3, specificIds: [600, 21, 11, 99, 143, 185, 155, 157, 700] };
+            config = { mode: '80', rootPersonId: 600, initialDepth: 3, specificIds: [600, 21, 11, 99, 143, 185, 155, 157, 390, 700] };
         } else if (input === 'all') {
             config = { mode: 'all', rootPersonId: null, initialDepth: 10 };
         } else {
