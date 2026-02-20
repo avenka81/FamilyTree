@@ -451,6 +451,38 @@
             opacity: 0.5;
         }
         
+        /* Tree selector dropdown */
+        .tree-selector-dropdown {
+            flex: 1;
+            max-width: 500px;
+            padding: 12px 20px;
+            background: rgba(248, 246, 240, 0.08);
+            border: 2px solid rgba(212, 175, 55, 0.3);
+            border-radius: 25px;
+            color: var(--parchment);
+            font-size: 16px;
+            font-weight: 600;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            transition: all 0.3s;
+            position: relative;
+            z-index: 10;
+            cursor: pointer;
+            text-align: center;
+        }
+        
+        .tree-selector-dropdown:focus {
+            outline: none;
+            border-color: var(--gold-500);
+            background: rgba(248, 246, 240, 0.12);
+            box-shadow: 0 4px 12px rgba(212, 175, 55, 0.2);
+        }
+        
+        .tree-selector-dropdown option {
+            background: var(--bark-900);
+            color: var(--parchment);
+            padding: 10px;
+        }
+        
         .version-info {
             position: fixed;
             bottom: 10px;
@@ -2035,27 +2067,22 @@
     <div id="launchScreen">
         <div class="launch-container">
             <div class="launch-title">Heritage Tree</div>
-            <div class="launch-subtitle">Enter access code to view family tree</div>
-            <input 
-                type="text" 
+            <div class="launch-subtitle">Select a family tree to view</div>
+            <select 
                 id="launchInput" 
                 class="launch-input" 
-                placeholder="Enter tree code..."
-                autocomplete="off"
                 autofocus
             >
-            <button class="launch-btn" onclick="validateAndLaunch()">Enter</button>
-            <div class="launch-error" id="launchError">Invalid code. Please try again.</div>
-            <div class="launch-options">
-                Valid codes:<br>
-                <span class="launch-option">Kochi</span> • 
-                <span class="launch-option">Ayalur</span> • 
-                <span class="launch-option">AVR</span> • 
-                <span class="launch-option">Radha</span> • 
-                <span class="launch-option">80</span> • 
-                <span class="launch-option">All</span>
-            </div>
-            <div style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); color: var(--gold-300); font-size: 12px; opacity: 0.7;">v7.11.2</div>
+                <option value="80">80</option>
+                <option value="kochi">Kochi</option>
+                <option value="ayalur">Ayalur</option>
+                <option value="avr">AVR</option>
+                <option value="radha">Radha</option>
+                <option value="all">All</option>
+            </select>
+            <button class="launch-btn" onclick="validateAndLaunch()">View Tree</button>
+            <div class="launch-error" id="launchError">Invalid selection. Please try again.</div>
+            <div style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); color: var(--gold-300); font-size: 12px; opacity: 0.7;">v7.13.0</div>
         </div>
     </div>
     
@@ -2074,7 +2101,7 @@
             
             <!-- Controls Section in Sidebar -->
             <div class="sidebar-controls">
-                <button class="control-btn" onclick="switchView(); closeMobileSidebarIfNeeded();">Switch View</button>
+                <button class="control-btn" onclick="switchView(); closeMobileSidebarIfNeeded();">Switch Tree View</button>
                 <button class="control-btn" onclick="openDataManager(); closeMobileSidebarIfNeeded();" id="dataManagerBtn">Data Manager</button>
                 <button class="control-btn" onclick="openThemeSelector(); closeMobileSidebarIfNeeded();" id="themeBtn">Theme Selector</button>
             </div>
@@ -2087,10 +2114,17 @@
         </div>
         
         <div class="tree-canvas">
-            <!-- Search Bar with Hamburger -->
+            <!-- Tree Selector Bar with Hamburger -->
             <div class="main-search-bar">
                 <button class="mobile-sidebar-toggle" onclick="toggleMobileSidebar()" aria-label="Toggle menu">☰</button>
-                <input type="text" id="mainSearchInput" placeholder="🔍 Search family members..." onkeyup="filterTreeBySearch(this.value)">
+                <select id="treeSelector" class="tree-selector-dropdown" onchange="switchTreeFromDropdown(this.value)">
+                    <option value="80">80</option>
+                    <option value="kochi">Kochi</option>
+                    <option value="ayalur">Ayalur</option>
+                    <option value="avr">AVR</option>
+                    <option value="radha">Radha</option>
+                    <option value="all">All</option>
+                </select>
             </div>
             
             <div class="tree-viewport" id="treeViewport">
@@ -3859,10 +3893,10 @@ return `
             // Show the launch screen again so user can select a different tree
             document.getElementById('launchScreen').classList.remove('hidden');
             
-            // Clear the input
+            // Reset select to default (80)
             const launchInput = document.getElementById('launchInput');
             if (launchInput) {
-                launchInput.value = '';
+                launchInput.value = '80';
                 launchInput.focus();
             }
             
@@ -3872,6 +3906,41 @@ return `
                 rootPersonId: null,
                 initialDepth: 3
             };
+        }
+        
+        function switchTreeFromDropdown(treeCode) {
+            // User changed tree from the top dropdown
+            console.log('🔄 Switching tree to:', treeCode);
+            
+            let config = null;
+            
+            if (treeCode === 'kochi') {
+                config = { mode: 'kochi', rootPersonId: 7, initialDepth: 3 };
+            } else if (treeCode === 'ayalur') {
+                config = { mode: 'ayalur', rootPersonId: 6, initialDepth: 3 };
+            } else if (treeCode === 'avr') {
+                config = { mode: 'avr', rootPersonId: 300, initialDepth: 3 };
+            } else if (treeCode === 'radha') {
+                config = { mode: 'radha', rootPersonId: 600, initialDepth: 3 };
+            } else if (treeCode === '80') {
+                config = { mode: '80', rootPersonId: 600, initialDepth: 3, specificIds: [600, 21, 11, 99, 143, 185, 155, 157, 700] };
+            } else if (treeCode === 'all') {
+                config = { mode: 'all', rootPersonId: null, initialDepth: 10 };
+            }
+            
+            if (config) {
+                currentTreeConfig = config;
+                
+                // Set selected person and render
+                if (config.rootPersonId) {
+                    selectedPerson = personMap[config.rootPersonId];
+                }
+                
+                // Scroll to top
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                
+                renderTree();
+            }
         }
         
         function collapseAll() {
@@ -5039,6 +5108,12 @@ return `
         currentTreeConfig = config;
         console.log('🔓 Launch validated:', config.mode, 'Root ID:', config.rootPersonId);
         document.getElementById('launchScreen').classList.add('hidden');
+        
+        // Sync the top dropdown selector
+        const treeSelector = document.getElementById('treeSelector');
+        if (treeSelector) {
+            treeSelector.value = input;
+        }
         
         // Set selected person and render
         if (config.rootPersonId) {
