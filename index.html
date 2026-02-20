@@ -2051,9 +2051,11 @@
                 <span class="launch-option">Kochi</span> • 
                 <span class="launch-option">Ayalur</span> • 
                 <span class="launch-option">AVR</span> • 
+                <span class="launch-option">Radha</span> • 
+                <span class="launch-option">80</span> • 
                 <span class="launch-option">All</span>
             </div>
-            <div style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); color: var(--gold-300); font-size: 12px; opacity: 0.7;">v7.10.0</div>
+            <div style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); color: var(--gold-300); font-size: 12px; opacity: 0.7;">v7.11.1</div>
         </div>
     </div>
     
@@ -3399,10 +3401,57 @@
             return result;
         }
         
+        // Special rendering function for mode "80"
+        // Renders multiple specific IDs as separate trees stacked vertically
+        function renderMode80() {
+            const container = document.getElementById('treeContainer');
+            
+            if (!currentTreeConfig.specificIds) {
+                console.error('Mode 80 called but no specificIds provided');
+                return;
+            }
+            
+            console.log('🎯 Rendering mode 80 with specific IDs:', currentTreeConfig.specificIds);
+            
+            // Create a vertical container for all trees
+            let allTreesHTML = '<div style="display: flex; flex-direction: column; gap: 40px; padding: 20px;">';
+            
+            currentTreeConfig.specificIds.forEach((personId, index) => {
+                const person = personMap[personId];
+                if (person) {
+                    console.log(`  Tree ${index + 1}: ${person.name} (ID: ${personId})`);
+                    const treeHTML = renderMobileTree(person);
+                    
+                    // Add a separator line between trees (except after the last one)
+                    const separator = index < currentTreeConfig.specificIds.length - 1 
+                        ? '<div style="height: 2px; background: linear-gradient(90deg, transparent, var(--gold-500), transparent); margin: 20px 0; opacity: 0.3;"></div>'
+                        : '';
+                    
+                    allTreesHTML += `
+                        <div class="tree-root mobile-vertical" style="margin-bottom: 20px;">
+                            ${treeHTML}
+                        </div>
+                        ${separator}
+                    `;
+                } else {
+                    console.warn(`  Person ID ${personId} not found in data`);
+                }
+            });
+            
+            allTreesHTML += '</div>';
+            container.innerHTML = allTreesHTML;
+        }
+        
         function renderTree() {
             const container = document.getElementById('treeContainer');
             
-            // CHECK: If we have a configured root person (Kochi, Ayalur, AVR modes)
+            // CHECK: Special mode "80" - render specific IDs as separate trees
+            if (currentTreeConfig.mode === '80') {
+                renderMode80();
+                return;
+            }
+            
+            // CHECK: If we have a configured root person (Kochi, Ayalur, AVR, Radha modes)
             if (currentTreeConfig.rootPersonId) {
                 const configuredRoot = personMap[currentTreeConfig.rootPersonId];
                 if (configuredRoot) {
@@ -4973,6 +5022,10 @@ return `
             config = { mode: 'ayalur', rootPersonId: 6, initialDepth: 3 };
         } else if (input === 'avr') {
             config = { mode: 'avr', rootPersonId: 300, initialDepth: 3 };
+        } else if (input === 'radha') {
+            config = { mode: 'radha', rootPersonId: 600, initialDepth: 3 };
+        } else if (input === '80') {
+            config = { mode: '80', rootPersonId: 600, initialDepth: 3, specificIds: [600, 21, 11, 99, 143, 185, 155, 157] };
         } else if (input === 'all') {
             config = { mode: 'all', rootPersonId: null, initialDepth: 10 };
         } else {
