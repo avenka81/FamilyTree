@@ -2082,7 +2082,7 @@
             </select>
             <button class="launch-btn" onclick="validateAndLaunch()">View Tree</button>
             <div class="launch-error" id="launchError">Invalid selection. Please try again.</div>
-            <div style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); color: var(--gold-300); font-size: 12px; opacity: 0.7;">v7.13.1</div>
+            <div style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); color: var(--gold-300); font-size: 12px; opacity: 0.7;">v7.14.0</div>
         </div>
     </div>
     
@@ -4481,6 +4481,129 @@ return `
             URL.revokeObjectURL(url);
         }
         
+        function exportGEDCOM() {
+            // Generate GEDCOM format genealogy data
+            let gedcom = '';
+            
+            // Header
+            gedcom += '0 HEAD\n';
+            gedcom += '1 SOUR Heritage Tree\n';
+            gedcom += '2 VERS 7.13.1\n';
+            gedcom += '2 NAME Heritage Tree Family Explorer\n';
+            gedcom += '1 DEST ANY\n';
+            gedcom += '1 DATE ' + new Date().toISOString().split('T')[0].replace(/-/g, ' ') + '\n';
+            gedcom += '1 CHAR UTF-8\n';
+            gedcom += '1 GEDC\n';
+            gedcom += '2 VERS 5.5.1\n';
+            gedcom += '2 FORM LINEAGE-LINKED\n';
+            
+            // Individuals
+            familyData.forEach(person => {
+                gedcom += `0 @I${person.id}@ INDI\n`;
+                gedcom += `1 NAME ${person.name}\n`;
+                
+                if (person.sex) {
+                    gedcom += `1 SEX ${person.sex === 'Male' ? 'M' : 'F'}\n`;
+                }
+                
+                if (person.born) {
+                    gedcom += `1 BIRT\n`;
+                    gedcom += `2 DATE ${person.born}\n`;
+                }
+                
+                if (person.until) {
+                    gedcom += `1 DEAT\n`;
+                    gedcom += `2 DATE ${person.until}\n`;
+                }
+                
+                // Family as child (FAMC)
+                if (person.fatherId || person.motherId) {
+                    const famId = `${person.fatherId || 'X'}_${person.motherId || 'X'}`;
+                    gedcom += `1 FAMC @F${famId}@\n`;
+                }
+                
+                // Family as spouse (FAMS)
+                if (person.spouseId) {
+                    const spouse = personMap[person.spouseId];
+                    if (spouse) {
+                        // Create consistent family ID (lower ID first)
+                        const famId = person.id < person.spouseId 
+                            ? `${person.id}_${person.spouseId}` 
+                            : `${person.spouseId}_${person.id}`;
+                        gedcom += `1 FAMS @F${famId}@\n`;
+                    }
+                }
+            });
+            
+            // Families
+            const families = new Set();
+            
+            // Create families from parent-child relationships
+            familyData.forEach(person => {
+                if (person.fatherId || person.motherId) {
+                    const famId = `${person.fatherId || 'X'}_${person.motherId || 'X'}`;
+                    if (!families.has(famId)) {
+                        families.add(famId);
+                        gedcom += `0 @F${famId}@ FAM\n`;
+                        if (person.fatherId) {
+                            gedcom += `1 HUSB @I${person.fatherId}@\n`;
+                        }
+                        if (person.motherId) {
+                            gedcom += `1 WIFE @I${person.motherId}@\n`;
+                        }
+                        
+                        // Add all children with these parents
+                        const children = familyData.filter(p => 
+                            p.fatherId === person.fatherId && p.motherId === person.motherId
+                        );
+                        children.forEach(child => {
+                            gedcom += `1 CHIL @I${child.id}@\n`;
+                        });
+                    }
+                }
+            });
+            
+            // Create families from spouse relationships (without children)
+            familyData.forEach(person => {
+                if (person.spouseId && person.id < person.spouseId) {
+                    const famId = `${person.id}_${person.spouseId}`;
+                    if (!families.has(famId)) {
+                        families.add(famId);
+                        gedcom += `0 @F${famId}@ FAM\n`;
+                        
+                        if (person.sex === 'Male') {
+                            gedcom += `1 HUSB @I${person.id}@\n`;
+                            gedcom += `1 WIFE @I${person.spouseId}@\n`;
+                        } else {
+                            gedcom += `1 HUSB @I${person.spouseId}@\n`;
+                            gedcom += `1 WIFE @I${person.id}@\n`;
+                        }
+                        
+                        // Add children
+                        const children = familyData.filter(p => 
+                            (p.fatherId === person.id && p.motherId === person.spouseId) ||
+                            (p.fatherId === person.spouseId && p.motherId === person.id)
+                        );
+                        children.forEach(child => {
+                            gedcom += `1 CHIL @I${child.id}@\n`;
+                        });
+                    }
+                }
+            });
+            
+            // Trailer
+            gedcom += '0 TRLR\n';
+            
+            // Download
+            const blob = new Blob([gedcom], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'family_tree.ged';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+        
         function exportForGoogleSheets() {
             // Create CSV with ORIGINAL 13-column format to match the source data
             const headers = ['Person ID', 'Person Name', 'Sex', 'Born', 'Until', 'Spouse ID', 'Spouse Name', 'Father ID', "Father's Name", 'Mother ID', "Mother's Name", 'Image ID', 'Group ID'];
@@ -5332,6 +5455,9 @@ return `
                         <div class="data-actions">
                             <button class="action-btn" onclick="exportJSON()">Download JSON</button>
                             <button class="action-btn" onclick="exportCSV()">Download CSV</button>
+                            <button class="action-btn" onclick="exportGEDCOM()">Download GEDCOM</button>
+                        </div>
+                        <div class="data-actions" style="margin-top: 10px;">
                             <button class="action-btn secondary" onclick="copyToClipboard()">Copy JSON</button>
                         </div>
                         <div class="data-actions" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(212, 175, 55, 0.2);">
@@ -5340,7 +5466,7 @@ return `
                             </button>
                         </div>
                         <p style="color: var(--gold-200); margin-top: 10px; font-size: 13px; opacity: 0.8;">
-                            Note: Downloads a new HTML file with current data baked in. Upload to GitHub to make changes permanent!
+                            Note: GEDCOM (.ged) files can be imported into most genealogy software like Ancestry, MyHeritage, and Family Tree Maker.
                         </p>
                     </div>
                 </div>
