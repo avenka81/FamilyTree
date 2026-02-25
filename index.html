@@ -2082,7 +2082,7 @@
             </select>
             <button class="launch-btn" onclick="validateAndLaunch()">View Tree</button>
             <div class="launch-error" id="launchError">Invalid selection. Please try again.</div>
-            <div style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); color: var(--gold-300); font-size: 12px; opacity: 0.7;">v7.14.0</div>
+            <div style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); color: var(--gold-300); font-size: 12px; opacity: 0.7;">v7.14.1</div>
         </div>
     </div>
     
@@ -4516,6 +4516,15 @@ return `
                     gedcom += `2 DATE ${person.until}\n`;
                 }
                 
+                // Add image/photo if available (GEDCOM 5.5.1 OBJE tag)
+                if (person.imageId) {
+                    const imageUrl = `https://lh3.googleusercontent.com/d/${person.imageId}`;
+                    gedcom += `1 OBJE\n`;
+                    gedcom += `2 FILE ${imageUrl}\n`;
+                    gedcom += `2 FORM URL\n`;
+                    gedcom += `2 TITL Photo of ${person.name}\n`;
+                }
+                
                 // Family as child (FAMC)
                 if (person.fatherId || person.motherId) {
                     const famId = `${person.fatherId || 'X'}_${person.motherId || 'X'}`;
@@ -5466,7 +5475,7 @@ return `
                             </button>
                         </div>
                         <p style="color: var(--gold-200); margin-top: 10px; font-size: 13px; opacity: 0.8;">
-                            Note: GEDCOM (.ged) files can be imported into most genealogy software like Ancestry, MyHeritage, and Family Tree Maker.
+                            Note: GEDCOM (.ged) files can be imported into most genealogy software. Image URLs are included - modern viewers like <strong>Gramps</strong>, <strong>RootsMagic 8+</strong>, and <strong>Ancestry.com</strong> should display them automatically.
                         </p>
                     </div>
                 </div>
