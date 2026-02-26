@@ -2082,7 +2082,7 @@
             </select>
             <button class="launch-btn" onclick="validateAndLaunch()">View Tree</button>
             <div class="launch-error" id="launchError">Invalid selection. Please try again.</div>
-            <div style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); color: var(--gold-300); font-size: 12px; opacity: 0.7;">v7.14.1</div>
+            <div style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); color: var(--gold-300); font-size: 12px; opacity: 0.7;">v7.15.3</div>
         </div>
     </div>
     
@@ -4725,8 +4725,10 @@ return `
                         data = JSON.parse(content);
                     } else if (file.name.endsWith('.csv')) {
                         data = parseCSV(content);
+                    } else if (file.name.endsWith('.ged') || file.name.endsWith('.gedcom')) {
+                        data = parseGEDCOM(content);
                     } else {
-                        alert('Unsupported file type!');
+                        alert('Unsupported file type! Please use .json, .csv, or .ged files.');
                         return;
                     }
                     
@@ -4752,9 +4754,141 @@ return `
                     renderTree();
                 } catch (e) {
                     alert('Error importing file: ' + e.message);
+                    console.error('Import error:', e);
                 }
             };
             reader.readAsText(file);
+        }
+        
+        function parseGEDCOM(gedcomText) {
+            console.log('📖 Parsing GEDCOM file...');
+            const lines = gedcomText.split('\n').map(l => l.trim()).filter(l => l);
+            
+            const individuals = {};
+            const families = {};
+            let currentEntity = null;
+            let currentEntityId = null;
+            let currentSubTag = null;
+            
+            // Parse GEDCOM structure
+            lines.forEach(line => {
+                const match = line.match(/^(\d+)\s+(@\w+@\s+)?(\w+)(\s+(.*))?$/);
+                if (!match) return;
+                
+                const [, level, id, tag, , value] = match;
+                const lvl = parseInt(level);
+                
+                if (lvl === 0) {
+                    currentSubTag = null;
+                    if (tag === 'INDI' && id) {
+                        currentEntityId = id.replace(/@/g, '');
+                        currentEntity = individuals[currentEntityId] = {
+                            id: currentEntityId,
+                            name: '',
+                            sex: '',
+                            born: '',
+                            until: '',
+                            imageId: '',
+                            fatherId: null,
+                            motherId: null,
+                            spouseId: null,
+                            families: []
+                        };
+                    } else if (tag === 'FAM' && id) {
+                        currentEntityId = id.replace(/@/g, '');
+                        currentEntity = families[currentEntityId] = {
+                            id: currentEntityId,
+                            husband: null,
+                            wife: null,
+                            children: []
+                        };
+                    } else {
+                        currentEntity = null;
+                    }
+                } else if (currentEntity && lvl === 1) {
+                    currentSubTag = tag;
+                    if (tag === 'NAME' && value) {
+                        currentEntity.name = value.replace(/\//g, '').trim();
+                    } else if (tag === 'SEX' && value) {
+                        currentEntity.sex = value === 'M' ? 'Male' : 'Female';
+                    } else if (tag === 'FAMC' && value) {
+                        const famId = value.replace(/@/g, '');
+                        if (currentEntity.id) currentEntity.parentFamilyId = famId;
+                    } else if (tag === 'FAMS' && value) {
+                        const famId = value.replace(/@/g, '');
+                        if (currentEntity.families) currentEntity.families.push(famId);
+                    } else if (tag === 'HUSB' && value) {
+                        currentEntity.husband = value.replace(/@/g, '');
+                    } else if (tag === 'WIFE' && value) {
+                        currentEntity.wife = value.replace(/@/g, '');
+                    } else if (tag === 'CHIL' && value) {
+                        currentEntity.children.push(value.replace(/@/g, ''));
+                    }
+                } else if (currentEntity && lvl === 2) {
+                    if (currentSubTag === 'BIRT' && tag === 'DATE' && value) {
+                        currentEntity.born = value;
+                    } else if (currentSubTag === 'DEAT' && tag === 'DATE' && value) {
+                        currentEntity.until = value;
+                    } else if (currentSubTag === 'OBJE' && tag === 'FILE' && value) {
+                        // Extract Google Drive ID from URL if present
+                        const match = value.match(/\/d\/([a-zA-Z0-9_-]+)/);
+                        if (match) {
+                            currentEntity.imageId = match[1];
+                        }
+                    }
+                }
+            });
+            
+            // Link families to individuals
+            Object.values(families).forEach(fam => {
+                if (fam.husband && fam.wife) {
+                    const husband = individuals[fam.husband];
+                    const wife = individuals[fam.wife];
+                    if (husband && wife) {
+                        husband.spouseId = wife.id;
+                        wife.spouseId = husband.id;
+                    }
+                }
+                
+                fam.children.forEach(childId => {
+                    const child = individuals[childId];
+                    if (child) {
+                        child.fatherId = fam.husband;
+                        child.motherId = fam.wife;
+                    }
+                });
+            });
+            
+            // Create ID mapping: GEDCOM ID -> Numeric ID
+            const idMap = {};
+            Object.keys(individuals).forEach((gedcomId, index) => {
+                // Extract numeric ID from GEDCOM ID (e.g., "I6" -> 6)
+                const numericId = gedcomId.match(/\d+/) ? parseInt(gedcomId.match(/\d+/)[0]) : index + 1;
+                idMap[gedcomId] = numericId;
+            });
+            
+            console.log('📋 ID Mapping created:', Object.keys(idMap).length, 'individuals');
+            
+            // Convert to array with properly mapped numeric IDs
+            const result = Object.entries(individuals).map(([gedcomId, person]) => {
+                const numericId = idMap[gedcomId];
+                
+                return {
+                    id: numericId,
+                    name: person.name || 'Unknown',
+                    sex: person.sex || 'Male',
+                    born: person.born || '',
+                    until: person.until || '',
+                    imageId: person.imageId || '',
+                    spouseId: person.spouseId ? idMap[person.spouseId] || null : null,
+                    fatherId: person.fatherId ? idMap[person.fatherId] || null : null,
+                    motherId: person.motherId ? idMap[person.motherId] || null : null
+                };
+            });
+            
+            console.log(`✅ Parsed ${result.length} individuals from GEDCOM`);
+            console.log('Sample person:', result[0]);
+            return result;
         }
         
         function parseCSV(csv) {
@@ -5122,6 +5256,44 @@ return `
                 });
             }
             
+            // Try to load GEDCOM file first (highest priority)
+            console.log('🔍 Attempting to load family_tree.ged...');
+            try {
+                const gedcomResponse = await fetch('family_tree.ged');
+                if (gedcomResponse.ok) {
+                    const gedcomData = await gedcomResponse.text();
+                    const data = parseGEDCOM(gedcomData);
+                    
+                    if (data && data.length > 0) {
+                        console.log('✅ Loaded', data.length, 'people from family_tree.ged');
+                        familyData = data;
+                        personMap = {};
+                        familyData.forEach(p => personMap[p.id] = p);
+                        
+                        // Save to localStorage for persistence
+                        localStorage.setItem('familyTreeData', JSON.stringify(data));
+                        console.log('💾 Data saved to localStorage');
+                        
+                        // Recalculate generations
+                        familyData.forEach(p => {
+                            p.generation = calculateGeneration(p);
+                        });
+                        
+                        // Update UI
+                        displayPeopleList();
+                        renderTree();
+                        return; // Successfully loaded GEDCOM, skip other loaders
+                    }
+                }
+            } catch (error) {
+                // CORS errors are expected when running locally (file:// protocol)
+                if (error.message && error.message.includes('fetch')) {
+                    console.log('ℹ️ Auto-load not available locally (CORS). Use "Choose File to Import" instead.');
+                } else {
+                    console.log('ℹ️ family_tree.ged not found, trying CSV...');
+                }
+            }
+            
             // Try to load from project CSV file
             console.log('🔍 Attempting to load family_tree_for_google_sheets.csv...');
             try {
@@ -5438,13 +5610,11 @@ return `
                     <div class="import-export-area" style="margin-top: 25px;">
                         <h3>Import Data</h3>
                         <p style="color: var(--gold-200); margin-bottom: 15px;">
-                            Import family data from JSON or CSV file. This will replace all current data.
+                            Import family data from JSON, CSV, or GEDCOM (.ged) file. This will replace all current data.
                         </p>
                         <div class="data-actions">
-                            <div class="file-input-wrapper">
-                                <button class="action-btn">Choose File</button>
-                                <input type="file" id="importFile" accept=".json,.csv" onchange="importData()">
-                            </div>
+                            <input type="file" id="importFile" accept=".json,.csv,.ged,.gedcom" onchange="importData()" style="display: none;">
+                            <button class="action-btn" onclick="document.getElementById('importFile').click()">Choose File to Import</button>
                             <button class="action-btn secondary" onclick="showImportTextArea()">Paste JSON</button>
                         </div>
                         <div id="importTextAreaContainer" style="display: none; margin-top: 20px;">
