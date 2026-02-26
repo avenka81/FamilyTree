@@ -5,6 +5,39 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Heritage Tree • Family Explorer</title>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+        import { getFirestore, collection, getDocs, doc, setDoc, deleteDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyBwAUQHnYdxKCbtQYyK2h3aCwo4MicAlQw",
+            authDomain: "heritage-tree-6cecb.firebaseapp.com",
+            projectId: "heritage-tree-6cecb",
+            storageBucket: "heritage-tree-6cecb.firebasestorage.app",
+            messagingSenderId: "80177985285",
+            appId: "1:80177985285:web:ae2a21ef55b5e4e08ba96c",
+            measurementId: "G-YWP5H0LW93"
+        };
+        
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        
+        // Make Firebase available globally
+        window.firebaseApp = app;
+        window.firebaseDB = db;
+        window.firebaseAuth = auth;
+        window.firebaseModules = {
+            collection, getDocs, doc, setDoc, deleteDoc, onSnapshot,
+            signInWithEmailAndPassword, signOut, onAuthStateChanged
+        };
+        
+        console.log('🔥 Firebase initialized successfully');
+    </script>
+    
     <style>
         :root {
             /* Modern Color Palette */
@@ -2082,7 +2115,7 @@
             </select>
             <button class="launch-btn" onclick="validateAndLaunch()">View Tree</button>
             <div class="launch-error" id="launchError">Invalid selection. Please try again.</div>
-            <div style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); color: var(--gold-300); font-size: 12px; opacity: 0.7;">v7.15.6</div>
+            <div style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); color: var(--gold-300); font-size: 12px; opacity: 0.7;">v8.0.1-firebase</div>
         </div>
     </div>
     
@@ -2101,6 +2134,22 @@
             
             <!-- Controls Section in Sidebar -->
             <div class="sidebar-controls">
+                <!-- Firebase Auth Status -->
+                <div id="authStatus" style="padding: 15px; background: rgba(212, 175, 55, 0.1); border-radius: 8px; margin-bottom: 15px; display: none;">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                        <span style="font-size: 20px;">🔐</span>
+                        <div>
+                            <div style="font-weight: 600; color: var(--gold-300);">Signed in as Editor</div>
+                            <div id="authEmail" style="font-size: 12px; color: var(--parchment); opacity: 0.7;"></div>
+                        </div>
+                    </div>
+                    <button class="control-btn" onclick="handleSignOut()" style="width: 100%; background: rgba(255, 107, 157, 0.2);">Sign Out</button>
+                </div>
+                
+                <button class="control-btn" id="authBtn" onclick="openAuthModal()" style="display: none;">
+                    <span style="margin-right: 8px;">🔑</span> Editor Sign In
+                </button>
+                
                 <button class="control-btn" onclick="switchView(); closeMobileSidebarIfNeeded();">Switch Tree View</button>
                 <button class="control-btn" onclick="openDataManager(); closeMobileSidebarIfNeeded();" id="dataManagerBtn">Data Manager</button>
                 <button class="control-btn" onclick="openThemeSelector(); closeMobileSidebarIfNeeded();" id="themeBtn">Theme Selector</button>
@@ -4759,6 +4808,13 @@ return `
                     
                     refreshPeopleList();
                     renderTree();
+                    
+                    // Save to Firebase if signed in
+                    if (isEditor) {
+                        if (confirm('Save imported data to Firebase cloud?')) {
+                            saveAllToFirebase();
+                        }
+                    }
                 } catch (e) {
                     alert('Error importing file: ' + e.message);
                     console.error('Import error:', e);
@@ -5406,6 +5462,205 @@ return `
         
     console.log('✅ Family tree loaded successfully');
     
+    // ===== FIREBASE INTEGRATION =====
+    
+    let currentUser = null;
+    let isEditor = false;
+    
+    // Wait for Firebase to initialize
+    setTimeout(initializeFirebase, 1000);
+    
+    function initializeFirebase() {
+        if (!window.firebaseAuth || !window.firebaseDB) {
+            console.log('⏳ Waiting for Firebase...');
+            setTimeout(initializeFirebase, 500);
+            return;
+        }
+        
+        console.log('🔥 Initializing Firebase integration...');
+        
+        // Monitor auth state
+        const { onAuthStateChanged } = window.firebaseModules;
+        onAuthStateChanged(window.firebaseAuth, (user) => {
+            currentUser = user;
+            isEditor = !!user;
+            updateAuthUI();
+            
+            if (user) {
+                console.log('✅ Signed in as:', user.email);
+            } else {
+                console.log('👤 Not signed in (read-only access)');
+            }
+        });
+        
+        // Load data from Firebase
+        loadFromFirebase();
+    }
+    
+    async function loadFromFirebase() {
+        try {
+            const { collection, getDocs } = window.firebaseModules;
+            const peopleRef = collection(window.firebaseDB, 'people');
+            const snapshot = await getDocs(peopleRef);
+            
+            if (!snapshot.empty) {
+                const firebaseData = [];
+                snapshot.forEach((doc) => {
+                    firebaseData.push(doc.data());
+                });
+                
+                console.log(`🔥 Loaded ${firebaseData.length} people from Firebase`);
+                
+                // Replace current data
+                familyData = firebaseData;
+                personMap = {};
+                familyData.forEach(p => personMap[p.id] = p);
+                
+                // Update UI
+                renderTree();
+            } else {
+                console.log('📭 No data in Firebase yet. Using local data.');
+                // Optionally: upload current data to Firebase
+                if (confirm('No data found in Firebase. Upload current data to cloud?')) {
+                    await saveAllToFirebase();
+                }
+            }
+        } catch (error) {
+            console.error('❌ Error loading from Firebase:', error);
+            console.log('Using local data instead');
+        }
+    }
+    
+    async function saveAllToFirebase() {
+        if (!isEditor) {
+            alert('You must be signed in as an editor to save data.');
+            return;
+        }
+        
+        try {
+            const { doc, setDoc } = window.firebaseModules;
+            
+            console.log(`💾 Saving ${familyData.length} people to Firebase...`);
+            
+            for (const person of familyData) {
+                const personRef = doc(window.firebaseDB, 'people', `person_${person.id}`);
+                await setDoc(personRef, person);
+            }
+            
+            console.log('✅ All data saved to Firebase!');
+            alert(`Successfully saved ${familyData.length} people to Firebase!`);
+        } catch (error) {
+            console.error('❌ Error saving to Firebase:', error);
+            alert('Error saving to Firebase: ' + error.message);
+        }
+    }
+    
+    function updateAuthUI() {
+        const authStatus = document.getElementById('authStatus');
+        const authBtn = document.getElementById('authBtn');
+        const authEmailDisplay = document.getElementById('authEmail');
+        
+        if (isEditor && currentUser) {
+            authStatus.style.display = 'block';
+            authBtn.style.display = 'none';
+            if (authEmailDisplay) {
+                authEmailDisplay.textContent = currentUser.email;
+            }
+        } else {
+            authStatus.style.display = 'none';
+            authBtn.style.display = 'block';
+        }
+    }
+    
+    function openAuthModal() {
+        const modal = document.getElementById('authModal');
+        modal.style.display = 'block';
+        setTimeout(() => {
+            modal.style.visibility = 'visible';
+            modal.style.opacity = '1';
+        }, 10);
+    }
+    
+    function closeAuthModal() {
+        const modal = document.getElementById('authModal');
+        modal.style.opacity = '0';
+        setTimeout(() => {
+            modal.style.visibility = 'hidden';
+            modal.style.display = 'none';
+        }, 300);
+    }
+    
+    async function handleSignIn() {
+        const emailInput = document.getElementById('authEmailInput');
+        const passwordInput = document.getElementById('authPasswordInput');
+        const errorDiv = document.getElementById('authError');
+        
+        const email = emailInput.value.trim();
+        const password = passwordInput.value;
+        
+        console.log('🔐 Attempting sign in for:', email);
+        
+        if (!email || !password) {
+            errorDiv.textContent = 'Please enter email and password';
+            errorDiv.style.display = 'block';
+            return;
+        }
+        
+        if (!window.firebaseAuth) {
+            errorDiv.textContent = 'Firebase not initialized. Please refresh the page.';
+            errorDiv.style.display = 'block';
+            console.error('Firebase Auth not available');
+            return;
+        }
+        
+        try {
+            const { signInWithEmailAndPassword } = window.firebaseModules;
+            console.log('🔑 Calling Firebase signIn...');
+            const userCredential = await signInWithEmailAndPassword(window.firebaseAuth, email, password);
+            console.log('✅ Sign in successful:', userCredential.user.email);
+            
+            closeAuthModal();
+            alert('Signed in successfully! You can now edit family data.');
+        } catch (error) {
+            console.error('❌ Sign in error:', error.code, error.message);
+            
+            let errorMessage = '';
+            switch (error.code) {
+                case 'auth/invalid-email':
+                    errorMessage = 'Invalid email address format.';
+                    break;
+                case 'auth/user-not-found':
+                    errorMessage = 'No user found with this email.';
+                    break;
+                case 'auth/wrong-password':
+                    errorMessage = 'Incorrect password.';
+                    break;
+                case 'auth/invalid-credential':
+                    errorMessage = 'Invalid credentials. Please check your email and password.';
+                    break;
+                case 'auth/too-many-requests':
+                    errorMessage = 'Too many failed attempts. Please try again later.';
+                    break;
+                default:
+                    errorMessage = error.message;
+            }
+            
+            errorDiv.textContent = errorMessage;
+            errorDiv.style.display = 'block';
+        }
+    }
+    
+    async function handleSignOut() {
+        try {
+            const { signOut } = window.firebaseModules;
+            await signOut(window.firebaseAuth);
+            alert('Signed out successfully.');
+        } catch (error) {
+            console.error('Sign out error:', error);
+            alert('Error signing out: ' + error.message);
+        }
+    }
+    
     // ===== LAUNCH SCREEN & TREE VIEW CONFIGURATION =====
     
     // Handle Enter key in launch input
@@ -5672,15 +5927,51 @@ return `
                             <button class="action-btn secondary" onclick="copyToClipboard()">Copy JSON</button>
                         </div>
                         <div class="data-actions" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(212, 175, 55, 0.2);">
+                            <button class="action-btn" onclick="saveAllToFirebase()" style="background: linear-gradient(135deg, #ff6b35, #ff8b5a); flex: 1;">
+                                🔥 Save All to Firebase Cloud
+                            </button>
+                        </div>
+                        <div class="data-actions" style="margin-top: 10px;">
                             <button class="action-btn" onclick="exportUpdatedHTML()" style="background: linear-gradient(135deg, #3498db, #2980b9); flex: 1;">
                                 Download Updated HTML File
                             </button>
                         </div>
                         <p style="color: var(--gold-200); margin-top: 10px; font-size: 13px; opacity: 0.8;">
-                            Note: GEDCOM (.ged) files can be imported into most genealogy software. Image URLs are included - modern viewers like <strong>Gramps</strong>, <strong>RootsMagic 8+</strong>, and <strong>Ancestry.com</strong> should display them automatically.
+                            <strong>Firebase Cloud:</strong> Saves data to cloud database. Requires editor sign-in.<br>
+                            <strong>GEDCOM:</strong> Standard genealogy format for import into Ancestry, Gramps, etc.
                         </p>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Authentication Modal -->
+    <div class="data-manager-modal" id="authModal" style="display: none; visibility: hidden; opacity: 0; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 200000;">
+        <div class="data-manager-content" style="max-width: 450px;">
+            <div class="data-manager-header">
+                <h2>🔑 Editor Sign In</h2>
+                <button class="data-manager-close" onclick="closeAuthModal()">×</button>
+            </div>
+            <div class="data-manager-body">
+                <p style="color: var(--gold-200); margin-bottom: 20px;">
+                    Sign in with your editor account to modify family data.
+                </p>
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; color: var(--gold-300); font-weight: 600;">Email</label>
+                    <input type="email" id="authEmailInput" placeholder="editor@example.com" style="width: 100%; padding: 12px; background: var(--bark-800); border: 2px solid var(--gold-400); border-radius: 6px; color: var(--cream); font-size: 14px;">
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 5px; color: var(--gold-300); font-weight: 600;">Password</label>
+                    <input type="password" id="authPasswordInput" placeholder="••••••••" style="width: 100%; padding: 12px; background: var(--bark-800); border: 2px solid var(--gold-400); border-radius: 6px; color: var(--cream); font-size: 14px;">
+                </div>
+                <div id="authError" style="display: none; padding: 12px; background: rgba(255, 107, 157, 0.2); border: 1px solid var(--rose-500); border-radius: 6px; color: var(--rose-400); margin-bottom: 15px; font-size: 14px;"></div>
+                <button onclick="handleSignIn()" style="width: 100%; padding: 15px; background: linear-gradient(135deg, var(--gold-500), var(--gold-400)); border: none; border-radius: 8px; color: var(--bark-900); font-weight: 700; font-size: 16px; cursor: pointer; transition: all 0.3s;">
+                    Sign In
+                </button>
+                <p style="color: var(--parchment); opacity: 0.6; font-size: 13px; margin-top: 15px; text-align: center;">
+                    Read-only access doesn't require sign-in.
+                </p>
             </div>
         </div>
     </div>
