@@ -2082,7 +2082,7 @@
             </select>
             <button class="launch-btn" onclick="validateAndLaunch()">View Tree</button>
             <div class="launch-error" id="launchError">Invalid selection. Please try again.</div>
-            <div style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); color: var(--gold-300); font-size: 12px; opacity: 0.7;">v7.15.3</div>
+            <div style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); color: var(--gold-300); font-size: 12px; opacity: 0.7;">v7.15.6</div>
         </div>
     </div>
     
@@ -4750,6 +4750,13 @@ return `
                     console.log('💾 Data saved to localStorage:', data.length, 'people');
                     
                     alert('Data imported successfully!');
+                    
+                    // Debug: Log first few people to console
+                    console.log('📊 Imported data sample (first 5 people):');
+                    familyData.slice(0, 5).forEach(p => {
+                        console.log(`  ${p.id}: ${p.name} | Spouse: ${p.spouseId} | Father: ${p.fatherId} | Mother: ${p.motherId}`);
+                    });
+                    
                     refreshPeopleList();
                     renderTree();
                 } catch (e) {
@@ -4781,7 +4788,7 @@ return `
                 if (lvl === 0) {
                     currentSubTag = null;
                     if (tag === 'INDI' && id) {
-                        currentEntityId = id.replace(/@/g, '');
+                        currentEntityId = id.replace(/@/g, '').trim();
                         currentEntity = individuals[currentEntityId] = {
                             id: currentEntityId,
                             name: '',
@@ -4795,7 +4802,7 @@ return `
                             families: []
                         };
                     } else if (tag === 'FAM' && id) {
-                        currentEntityId = id.replace(/@/g, '');
+                        currentEntityId = id.replace(/@/g, '').trim();
                         currentEntity = families[currentEntityId] = {
                             id: currentEntityId,
                             husband: null,
@@ -4812,17 +4819,17 @@ return `
                     } else if (tag === 'SEX' && value) {
                         currentEntity.sex = value === 'M' ? 'Male' : 'Female';
                     } else if (tag === 'FAMC' && value) {
-                        const famId = value.replace(/@/g, '');
+                        const famId = value.replace(/@/g, '').trim();
                         if (currentEntity.id) currentEntity.parentFamilyId = famId;
                     } else if (tag === 'FAMS' && value) {
-                        const famId = value.replace(/@/g, '');
+                        const famId = value.replace(/@/g, '').trim();
                         if (currentEntity.families) currentEntity.families.push(famId);
                     } else if (tag === 'HUSB' && value) {
-                        currentEntity.husband = value.replace(/@/g, '');
+                        currentEntity.husband = value.replace(/@/g, '').trim();
                     } else if (tag === 'WIFE' && value) {
-                        currentEntity.wife = value.replace(/@/g, '');
+                        currentEntity.wife = value.replace(/@/g, '').trim();
                     } else if (tag === 'CHIL' && value) {
-                        currentEntity.children.push(value.replace(/@/g, ''));
+                        currentEntity.children.push(value.replace(/@/g, '').trim());
                     }
                 } else if (currentEntity && lvl === 2) {
                     if (currentSubTag === 'BIRT' && tag === 'DATE' && value) {
@@ -4840,21 +4847,33 @@ return `
             });
             
             // Link families to individuals
-            Object.values(families).forEach(fam => {
+            console.log('🔗 Linking families to individuals...');
+            Object.values(families).forEach((fam, idx) => {
+                if (idx < 3) {
+                    console.log(`  Family ${fam.id}: husband=${fam.husband}, wife=${fam.wife}, children=${fam.children.length}`);
+                }
+                
                 if (fam.husband && fam.wife) {
                     const husband = individuals[fam.husband];
                     const wife = individuals[fam.wife];
                     if (husband && wife) {
-                        husband.spouseId = wife.id;
-                        wife.spouseId = husband.id;
+                        // Store GEDCOM IDs, not object references
+                        husband.spouseId = fam.wife;  // This is already a GEDCOM ID string
+                        wife.spouseId = fam.husband;  // This is already a GEDCOM ID string
+                        if (idx < 3) {
+                            console.log(`  ✅ Linked spouses: ${fam.husband} (${husband.name}) ↔ ${fam.wife} (${wife.name})`);
+                        }
+                    } else {
+                        console.log(`  ⚠️ Missing spouse: husband=${!!husband}, wife=${!!wife}`);
                     }
                 }
                 
                 fam.children.forEach(childId => {
                     const child = individuals[childId];
                     if (child) {
-                        child.fatherId = fam.husband;
-                        child.motherId = fam.wife;
+                        // Store GEDCOM IDs, not object references
+                        child.fatherId = fam.husband;  // Already a GEDCOM ID string
+                        child.motherId = fam.wife;     // Already a GEDCOM ID string
                     }
                 });
             });
@@ -4868,6 +4887,15 @@ return `
             });
             
             console.log('📋 ID Mapping created:', Object.keys(idMap).length, 'individuals');
+            const sampleMappings = Object.entries(idMap).slice(0, 5);
+            console.log('  Sample ID mappings:', sampleMappings);
+            
+            // Check a few individuals before conversion
+            const samplePeople = Object.entries(individuals).slice(0, 3);
+            console.log('🔍 Sample people BEFORE conversion:');
+            samplePeople.forEach(([id, p]) => {
+                console.log(`  ${id} (${p.name}): spouse=${p.spouseId}, father=${p.fatherId}, mother=${p.motherId}`);
+            });
             
             // Convert to array with properly mapped numeric IDs
             const result = Object.entries(individuals).map(([gedcomId, person]) => {
@@ -4887,7 +4915,11 @@ return `
             });
             
             console.log(`✅ Parsed ${result.length} individuals from GEDCOM`);
-            console.log('Sample person:', result[0]);
+            console.log('🔍 First 3 people AFTER conversion:');
+            result.slice(0, 3).forEach(p => {
+                console.log(`  ID ${p.id} (${p.name}): spouse=${p.spouseId}, father=${p.fatherId}, mother=${p.motherId}`);
+            });
+            
             return result;
         }
         
