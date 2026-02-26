@@ -2115,7 +2115,7 @@
             </select>
             <button class="launch-btn" onclick="validateAndLaunch()">View Tree</button>
             <div class="launch-error" id="launchError">Invalid selection. Please try again.</div>
-            <div style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); color: var(--gold-300); font-size: 12px; opacity: 0.7;">v8.0.1-firebase</div>
+            <div style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); color: var(--gold-300); font-size: 12px; opacity: 0.7;">v8.0.2-debug</div>
         </div>
     </div>
     
@@ -5511,6 +5511,14 @@ return `
                 
                 console.log(`🔥 Loaded ${firebaseData.length} people from Firebase`);
                 
+                // Debug: Check imageId in first few people
+                const peopleWithImages = firebaseData.filter(p => p.imageId).length;
+                console.log(`📸 People with images: ${peopleWithImages}`);
+                const sampleWithImage = firebaseData.find(p => p.imageId);
+                if (sampleWithImage) {
+                    console.log(`Sample person with image:`, sampleWithImage.id, sampleWithImage.name, 'imageId:', sampleWithImage.imageId);
+                }
+                
                 // Replace current data
                 familyData = firebaseData;
                 personMap = {};
@@ -5541,6 +5549,14 @@ return `
             const { doc, setDoc } = window.firebaseModules;
             
             console.log(`💾 Saving ${familyData.length} people to Firebase...`);
+            
+            // Debug: Check how many have imageId
+            const peopleWithImages = familyData.filter(p => p.imageId).length;
+            console.log(`📸 People with imageId in current data: ${peopleWithImages}`);
+            const sampleWithImage = familyData.find(p => p.imageId);
+            if (sampleWithImage) {
+                console.log(`Sample before save:`, sampleWithImage.id, sampleWithImage.name, 'imageId:', sampleWithImage.imageId);
+            }
             
             for (const person of familyData) {
                 const personRef = doc(window.firebaseDB, 'people', `person_${person.id}`);
