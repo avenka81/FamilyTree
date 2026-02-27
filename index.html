@@ -9,7 +9,7 @@
     <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
-        import { getFirestore, collection, getDocs, doc, setDoc, deleteDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+        import { getFirestore, collection, getDocs, doc, setDoc, deleteDoc, onSnapshot, addDoc, updateDoc, getDoc, query, where, orderBy, limit, serverTimestamp, Timestamp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
         import { getAuth, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
         
         const firebaseConfig = {
@@ -34,6 +34,7 @@
         window.googleProvider = googleProvider;
         window.firebaseModules = {
             collection, getDocs, doc, setDoc, deleteDoc, onSnapshot,
+            addDoc, updateDoc, getDoc, query, where, orderBy, limit, serverTimestamp, Timestamp,
             signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged
         };
         
@@ -319,16 +320,20 @@
         
         .sidebar-controls .control-btn {
             width: 100%;
-            padding: 8px 10px; /* Smaller padding */
+            padding: 14px 16px;
             background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.08));
             border: 1px solid rgba(212, 175, 55, 0.3);
             color: var(--gold-400);
-            border-radius: 6px;
+            border-radius: 8px;
             cursor: pointer;
             transition: all 0.3s;
-            font-size: 12px; /* Smaller font */
+            font-size: 15px;
             font-weight: 600;
             text-align: center;
+            min-height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
         .sidebar-controls .control-btn:hover {
@@ -1877,6 +1882,138 @@
             transform: translateX(5px);
         }
         
+        /* Edit mode styles for person detail */
+        .person-detail-edit-input {
+            background: var(--bark-700);
+            border: 1px solid rgba(212, 175, 55, 0.4);
+            border-radius: 6px;
+            padding: 8px 12px;
+            color: var(--parchment);
+            font-size: 14px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .person-detail-edit-input:focus {
+            outline: none;
+            border-color: var(--gold-500);
+            box-shadow: 0 0 0 2px rgba(244, 162, 97, 0.2);
+        }
+        .person-detail-edit-input:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .pd-field-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        .pd-field-label {
+            color: var(--gold-400);
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            min-width: 70px;
+            flex-shrink: 0;
+        }
+        .pd-section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .pd-section-header h3 {
+            margin: 0;
+        }
+        .pd-add-btn {
+            background: rgba(108, 154, 139, 0.3);
+            border: 1px solid var(--sage-500);
+            color: var(--sage-400);
+            border-radius: 6px;
+            padding: 4px 12px;
+            font-size: 12px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .pd-add-btn:hover {
+            background: rgba(108, 154, 139, 0.5);
+        }
+        .pd-save-bar {
+            padding: 15px 30px;
+            border-top: 1px solid rgba(212, 175, 55, 0.3);
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+        .pd-save-btn {
+            padding: 10px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .pd-image-area {
+            position: relative;
+            width: 100px;
+            height: 100px;
+            border-radius: 12px;
+            border: 3px dashed rgba(212, 175, 55, 0.4);
+            flex-shrink: 0;
+            overflow: hidden;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(212, 175, 55, 0.05);
+        }
+        .pd-image-area img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .pd-image-area:hover {
+            border-color: var(--gold-500);
+        }
+        .pd-image-area .pd-image-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0,0,0,0.7);
+            color: var(--gold-400);
+            font-size: 11px;
+            text-align: center;
+            padding: 4px;
+            display: none;
+        }
+        .pd-image-area:hover .pd-image-overlay {
+            display: block;
+        }
+        .pd-spouse-group {
+            background: rgba(248, 246, 240, 0.03);
+            border: 1px solid rgba(212, 175, 55, 0.15);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+        }
+        .pd-spouse-group-header {
+            color: var(--gold-300);
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .pd-spouse-dates {
+            color: var(--parchment);
+            opacity: 0.6;
+            font-size: 12px;
+            font-weight: 400;
+        }
+        
         /* ===== END VERTICAL LAYOUT ===== */
         
         /* Code Folding Style - Vertical Line on Left */
@@ -1972,7 +2109,7 @@
             </select>
             <button class="launch-btn" onclick="validateAndLaunch()">View Tree</button>
             <div class="launch-error" id="launchError">Invalid selection. Please try again.</div>
-            <div style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); color: var(--gold-300); font-size: 12px; opacity: 0.7;">v8.4.0</div>
+            <div style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); color: var(--gold-300); font-size: 12px; opacity: 0.7;">v9.3.1</div>
         </div>
     </div>
     
@@ -1994,17 +2131,21 @@
                 <!-- Firebase Auth Status -->
                 <div id="authStatus" style="padding: 15px; background: rgba(212, 175, 55, 0.1); border-radius: 8px; margin-bottom: 15px; display: none;">
                     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-                        <span style="font-size: 20px;">🔐</span>
                         <div>
-                            <div style="font-weight: 600; color: var(--gold-300);">Signed in as Editor</div>
+                            <div style="font-weight: 600; color: var(--gold-300);">Signed In</div>
                             <div id="authEmail" style="font-size: 12px; color: var(--parchment); opacity: 0.7;"></div>
+                            <div id="authRole" style="font-size: 11px; color: var(--gold-400); margin-top: 2px;"></div>
                         </div>
                     </div>
                     <button class="control-btn" onclick="handleSignOut()" style="width: 100%; background: rgba(255, 107, 157, 0.2);">Sign Out</button>
                 </div>
                 
                 <button class="control-btn" id="authBtn" onclick="openAuthModal()" style="display: none;">
-                    <span style="margin-right: 8px;">🔑</span> Editor Sign In
+                    Editor Sign In
+                </button>
+                
+                <button class="control-btn" id="adminPanelBtn" onclick="openAdminPanel(); closeMobileSidebarIfNeeded();" style="display: none;">
+                    Admin Panel
                 </button>
                 
                 <button class="control-btn" onclick="switchView(); closeMobileSidebarIfNeeded();">Switch Tree View</button>
@@ -2453,22 +2594,18 @@
             descendantCache = {};
             generationCache = {};
             _childrenCache = {};
-            const indexedChildren = new Set(); // Track which child→parent pairs are indexed
             
             familyData.forEach(p => {
                 personMap[p.id] = p;
                 // Build children index: map each parent to their children
+                // Children MUST appear under BOTH parents for tree rendering to work
                 if (p.fatherId) {
                     if (!childrenIndex[p.fatherId]) childrenIndex[p.fatherId] = [];
                     childrenIndex[p.fatherId].push(p);
-                    indexedChildren.add(p.id);
                 }
                 if (p.motherId) {
                     if (!childrenIndex[p.motherId]) childrenIndex[p.motherId] = [];
-                    // Avoid duplicates: only add if not already indexed via father
-                    if (!indexedChildren.has(p.id) || !p.fatherId) {
-                        childrenIndex[p.motherId].push(p);
-                    }
+                    childrenIndex[p.motherId].push(p);
                 }
             });
         }
@@ -2835,96 +2972,201 @@
             showPersonDetail(person);
         }
         
-        function showPersonDetail(person) {
-            debug('📋 showPersonDetail called for:', person.name);
+        let _detailEditMode = false;
+        let _detailPersonId = null;
+        
+        function showPersonDetail(person, startInEditMode) {
+            _detailPersonId = person.id;
+            _detailEditMode = !!startInEditMode;
             
-            // Build detail HTML
             const imgUrl = person.imageId ? `https://lh3.googleusercontent.com/d/${person.imageId}` : '';
             const years = person.born || person.until ? 
-                `${person.born || '?'} - ${person.until || 'Present'}` : 'Unknown';
+                `${person.born || '?'} - ${person.until || 'Present'}` : '';
             
-            // Get relationships
             const father = person.fatherId ? personMap[person.fatherId] : null;
             const mother = person.motherId ? personMap[person.motherId] : null;
             const spouse = person.spouseId ? personMap[person.spouseId] : null;
-            const children = getChildren(person.id);
+            const allChildren = getChildren(person.id);
+            // Also get spouse's children to merge
+            const spouseChildren = spouse ? getChildren(spouse.id) : [];
+            const childSet = new Set(allChildren.map(c => c.id));
+            for (const sc of spouseChildren) { if (!childSet.has(sc.id)) { allChildren.push(sc); childSet.add(sc.id); } }
             const siblings = getSiblings(person);
             
-            // Build HTML
-            let html = `
-                <div class="person-detail-content" onclick="event.stopPropagation()">
-                    <button class="person-detail-close" onclick="closePersonDetail()">×</button>
-                        
-                        <div class="person-detail-header">
-                            ${imgUrl ? `<img src="${imgUrl}" class="person-detail-image" onerror="this.style.display='none'">` : ''}
-                            <div class="person-detail-info">
-                                <h2>${person.name}</h2>
-                                <div class="person-detail-meta">
-                                    <div class="person-detail-years">${years}</div>
-                                    <div class="person-detail-gender">${person.sex}</div>
-                                    <button class="person-detail-view-btn" onclick="event.stopPropagation(); viewTreeFromPerson(${person.id})">View Tree</button>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="person-detail-body">`;
+            const isEditMode = _detailEditMode && canEdit();
+            const editBtnStyle = canEdit() ? '' : 'display:none;';
             
-            // Parents
-            if (father || mother) {
-                html += `<div class="person-detail-section">
-                    <h3>Parents</h3>
-                    <div class="person-detail-list">`;
-                if (father) html += `<div class="person-detail-item" onclick="showPersonDetail(personMap[${father.id}])">${father.name}</div>`;
-                if (mother) html += `<div class="person-detail-item" onclick="showPersonDetail(personMap[${mother.id}])">${mother.name}</div>`;
-                html += `</div></div>`;
+            // Build image area
+            let imageHtml;
+            if (isEditMode) {
+                imageHtml = `<div class="pd-image-area" onclick="document.getElementById('pdImageUpload').click()">
+                    ${imgUrl ? `<img src="${imgUrl}" onerror="this.style.display='none'">` : '<div style="color: var(--gold-400); font-size: 28px;">+</div>'}
+                    <div class="pd-image-overlay">Change</div>
+                    <input type="file" id="pdImageUpload" accept="image/*" style="display:none" onchange="handlePersonImageUpload(event)">
+                </div>`;
+            } else {
+                imageHtml = imgUrl ? `<img src="${imgUrl}" class="person-detail-image" onerror="this.style.display='none'">` : '';
             }
             
-            // Spouse
-            if (spouse) {
-                html += `<div class="person-detail-section">
-                    <h3>Spouse</h3>
-                    <div class="person-detail-list">
-                        <div class="person-detail-item" onclick="showPersonDetail(personMap[${spouse.id}])">${spouse.name}</div>
+            // Header section
+            let headerHtml;
+            if (isEditMode) {
+                headerHtml = `
+                    <div class="pd-field-row" style="margin-bottom:0">
+                        <input type="text" class="person-detail-edit-input" id="pdEditName" value="${person.name}" style="font-size:20px; font-weight:600; color:var(--gold-300);">
+                    </div>
+                    <div class="pd-field-row" style="margin-top:8px">
+                        <select class="person-detail-edit-input" id="pdEditSex" style="width:auto; min-width:90px;">
+                            <option value="Male" ${person.sex === 'Male' ? 'selected' : ''}>Male</option>
+                            <option value="Female" ${person.sex === 'Female' ? 'selected' : ''}>Female</option>
+                        </select>
+                        <input type="text" class="person-detail-edit-input" id="pdEditBorn" value="${person.born || ''}" placeholder="Born" style="width:80px;">
+                        <span style="color:var(--parchment);">–</span>
+                        <input type="text" class="person-detail-edit-input" id="pdEditUntil" value="${person.until || ''}" placeholder="Died" style="width:80px;">
+                    </div>`;
+            } else {
+                headerHtml = `
+                    <h2>${person.name}</h2>
+                    <div class="person-detail-meta">
+                        ${years ? `<div class="person-detail-years">${years}</div>` : ''}
+                        <div class="person-detail-gender">${person.sex}</div>
+                        <button class="person-detail-view-btn" onclick="event.stopPropagation(); viewTreeFromPerson(${person.id})">View Tree</button>
+                        <button class="person-detail-view-btn" onclick="event.stopPropagation(); showPersonDetail(personMap[${person.id}], true)" style="background: linear-gradient(135deg, var(--sage-500), #5a8a7b); ${editBtnStyle}">Edit</button>
+                    </div>`;
+            }
+            
+            let bodyHtml = '';
+            
+            const addBtnHtml = (onclick) => canEdit() ? `<button class="pd-add-btn" onclick="event.stopPropagation(); ${onclick}">+ Add</button>` : '';
+            
+            // Parents section
+            const parentHeader = isEditMode ? `<div class="pd-section-header"><h3>Parents</h3></div>` : '<h3>Parents</h3>';
+            if (father || mother || isEditMode) {
+                bodyHtml += `<div class="person-detail-section">${parentHeader}<div class="person-detail-list">`;
+                if (isEditMode) {
+                    const fatherOpts = buildPersonSelect('pdEditFather', person.fatherId, 'Male', !canChangeLinks());
+                    const motherOpts = buildPersonSelect('pdEditMother', person.motherId, 'Female', !canChangeLinks());
+                    bodyHtml += `<div class="pd-field-row"><span class="pd-field-label">Father</span>${fatherOpts}</div>`;
+                    bodyHtml += `<div class="pd-field-row"><span class="pd-field-label">Mother</span>${motherOpts}</div>`;
+                } else {
+                    if (father) bodyHtml += `<div class="person-detail-item" onclick="showPersonDetail(personMap[${father.id}])">${father.name}</div>`;
+                    if (mother) bodyHtml += `<div class="person-detail-item" onclick="showPersonDetail(personMap[${mother.id}])">${mother.name}</div>`;
+                }
+                bodyHtml += `</div></div>`;
+            }
+            
+            // Spouse section with marriage dates and children grouped by spouse
+            if (spouse || isEditMode || canEdit()) {
+                const spouseHeader = isEditMode 
+                    ? `<div class="pd-section-header"><h3>Spouse & Children</h3></div>`
+                    : `<div class="pd-section-header"><h3>Spouse & Children</h3>${!spouse ? addBtnHtml(`addRelativeFromDetail(${person.id}, 'spouse')`) : ''}</div>`;
+                bodyHtml += `<div class="person-detail-section">${spouseHeader}`;
+                if (isEditMode) {
+                    const spouseOpts = buildPersonSelect('pdEditSpouse', person.spouseId, null, !canChangeLinks());
+                    bodyHtml += `<div class="pd-field-row"><span class="pd-field-label">Spouse</span>${spouseOpts}</div>`;
+                    bodyHtml += `<div class="pd-field-row"><span class="pd-field-label">Married</span><input type="text" class="person-detail-edit-input" id="pdEditMarriageDate" value="${person.marriageDate || ''}" placeholder="Year" style="width:80px;"></div>`;
+                    bodyHtml += `<div class="pd-field-row"><span class="pd-field-label">Separated</span><input type="text" class="person-detail-edit-input" id="pdEditSeparationDate" value="${person.separationDate || ''}" placeholder="Year (if any)" style="width:80px;"></div>`;
+                } else if (spouse) {
+                    // Group children under spouse
+                    let spouseDates = '';
+                    if (person.marriageDate) spouseDates += `m. ${person.marriageDate}`;
+                    if (person.separationDate) spouseDates += ` — sep. ${person.separationDate}`;
+                    
+                    bodyHtml += `<div class="pd-spouse-group">`;
+                    bodyHtml += `<div class="pd-spouse-group-header">
+                        <span class="person-detail-item" style="margin:0; flex:1;" onclick="showPersonDetail(personMap[${spouse.id}])">${spouse.name}</span>
+                        ${spouseDates ? `<span class="pd-spouse-dates">${spouseDates}</span>` : ''}
+                    </div>`;
+                    
+                    // Children with this spouse
+                    const spouseChildrenFiltered = allChildren.filter(c => 
+                        (c.fatherId === person.id && c.motherId === spouse.id) ||
+                        (c.motherId === person.id && c.fatherId === spouse.id)
+                    );
+                    if (spouseChildrenFiltered.length > 0) {
+                        bodyHtml += `<div style="margin-top:8px; padding-left:12px; border-left: 2px solid rgba(212,175,55,0.2);">`;
+                        spouseChildrenFiltered.forEach(child => {
+                            bodyHtml += `<div class="person-detail-item" style="margin-bottom:4px;" onclick="showPersonDetail(personMap[${child.id}])">${child.name}</div>`;
+                        });
+                        bodyHtml += `</div>`;
+                    }
+                    // Add child button within spouse group
+                    bodyHtml += `<div style="margin-top:8px;">${addBtnHtml(`addRelativeFromDetail(${person.id}, 'child')`)}</div>`;
+                    bodyHtml += `</div>`;
+                }
+                bodyHtml += `</div>`;
+            }
+            
+            // Siblings section
+            if (siblings.length > 0 || canEdit()) {
+                const sibHeader = `<div class="pd-section-header"><h3>Siblings</h3>${addBtnHtml(`addRelativeFromDetail(${person.id}, 'sibling')`)}</div>`;
+                bodyHtml += `<div class="person-detail-section">${sibHeader}<div class="person-detail-list">`;
+                siblings.forEach(sib => {
+                    bodyHtml += `<div class="person-detail-item" onclick="showPersonDetail(personMap[${sib.id}])">${sib.name}</div>`;
+                });
+                bodyHtml += `</div></div>`;
+            }
+            
+            // Children NOT already grouped under spouse (e.g., from another relationship or unknown spouse)
+            if (!isEditMode) {
+                const ungroupedChildren = allChildren.filter(c => {
+                    if (!spouse) return true;
+                    return !((c.fatherId === person.id && c.motherId === spouse.id) ||
+                             (c.motherId === person.id && c.fatherId === spouse.id));
+                });
+                if (ungroupedChildren.length > 0) {
+                    bodyHtml += `<div class="person-detail-section"><h3>Other Children</h3><div class="person-detail-list">`;
+                    ungroupedChildren.forEach(child => {
+                        bodyHtml += `<div class="person-detail-item" onclick="showPersonDetail(personMap[${child.id}])">${child.name}</div>`;
+                    });
+                    bodyHtml += `</div></div>`;
+                }
+            }
+            
+            // Image ID field in edit mode
+            let imageIdHtml = '';
+            if (isEditMode) {
+                imageIdHtml = `<div class="person-detail-section"><h3>Image</h3>
+                    <div class="pd-field-row"><span class="pd-field-label">Drive ID</span>
+                        <input type="text" class="person-detail-edit-input" id="pdEditImageId" value="${person.imageId || ''}" placeholder="Google Drive file ID">
+                    </div>
+                    <div style="color:var(--parchment); opacity:0.5; font-size:11px; margin-top:4px;">
+                        Tap photo to upload from camera/gallery. You can also copy an image and paste it here (Ctrl+V / long-press paste).
                     </div>
                 </div>`;
             }
             
-            // Siblings
-            if (siblings.length > 0) {
-                html += `<div class="person-detail-section">
-                    <h3>Siblings</h3>
-                    <div class="person-detail-list">`;
-                siblings.forEach(sib => {
-                    html += `<div class="person-detail-item" onclick="showPersonDetail(personMap[${sib.id}])">${sib.name}</div>`;
-                });
-                html += `</div></div>`;
+            // Save bar in edit mode
+            let saveBarHtml = '';
+            if (isEditMode) {
+                const deleteBtnHtml = canDelete() ? `<button class="pd-save-btn" onclick="deletePersonFromDetail(${person.id})" style="background: rgba(231,76,60,0.8); color: white;">Delete</button>` : '';
+                saveBarHtml = `<div class="pd-save-bar">
+                    ${deleteBtnHtml}
+                    <button class="pd-save-btn" onclick="showPersonDetail(personMap[${person.id}])" style="background: var(--bark-700); color: var(--parchment); border: 1px solid rgba(212,175,55,0.3);">Cancel</button>
+                    <button class="pd-save-btn" onclick="savePersonFromDetail(${person.id})" style="background: var(--gold-500); color: var(--bark-900);">Save</button>
+                </div>`;
             }
             
-            // Children
-            if (children.length > 0) {
-                html += `<div class="person-detail-section">
-                    <h3>Children</h3>
-                    <div class="person-detail-list">`;
-                children.forEach(child => {
-                    html += `<div class="person-detail-item" onclick="showPersonDetail(personMap[${child.id}])">${child.name}</div>`;
-                });
-                html += `</div></div>`;
-            }
+            const html = `
+                <div class="person-detail-content" onclick="event.stopPropagation()">
+                    <button class="person-detail-close" onclick="closePersonDetail()">×</button>
+                    <div class="person-detail-header">
+                        ${imageHtml}
+                        <div class="person-detail-info">${headerHtml}</div>
+                    </div>
+                    <div class="person-detail-body">
+                        ${bodyHtml}
+                        ${imageIdHtml}
+                    </div>
+                    ${saveBarHtml}
+                </div>`;
             
-            html += `</div></div>`;
-            
-            debug('🏗️ Modal HTML built, length:', html.length);
-            
-            // Add to page
             let modal = document.getElementById('personDetailModal');
             if (!modal) {
-                debug('📦 Creating new modal element');
                 modal = document.createElement('div');
                 modal.id = 'personDetailModal';
                 modal.className = 'person-detail-modal';
                 document.body.appendChild(modal);
-            } else {
-                debug('♻️ Reusing existing modal');
             }
             
             modal.innerHTML = html;
@@ -2932,16 +3174,225 @@
             modal.onclick = (event) => {
                 if (event.target === modal) closePersonDetail();
             };
-            
-            debug('✅ Modal display set to:', modal.style.display);
-            debug('✅ Modal in DOM:', document.getElementById('personDetailModal') !== null);
-            debug('✅ Modal computed display:', window.getComputedStyle(modal).display);
         }
+        
+        function buildPersonSelect(id, selectedId, sexFilter, disabled) {
+            let opts = `<option value="">-- None --</option>`;
+            const people = familyData.filter(p => !sexFilter || p.sex === sexFilter).sort((a,b) => a.name.localeCompare(b.name));
+            for (const p of people) {
+                const sel = p.id === selectedId ? 'selected' : '';
+                opts += `<option value="${p.id}" ${sel}>${p.name} (${p.id})</option>`;
+            }
+            return `<select class="person-detail-edit-input" id="${id}" style="flex:1;" ${disabled ? 'disabled title="Admin permissions required to change links"' : ''}>${opts}</select>`;
+        }
+        
+        async function savePersonFromDetail(personId) {
+            if (!canEdit()) { alert('You must be signed in to edit.'); return; }
+            
+            const person = personMap[personId];
+            if (!person) return;
+            
+            const oldData = { ...person };
+            
+            person.name = document.getElementById('pdEditName').value.trim();
+            person.sex = document.getElementById('pdEditSex').value;
+            person.born = document.getElementById('pdEditBorn').value.trim();
+            person.until = document.getElementById('pdEditUntil').value.trim();
+            person.imageId = document.getElementById('pdEditImageId').value.trim();
+            person.marriageDate = document.getElementById('pdEditMarriageDate').value.trim();
+            person.separationDate = document.getElementById('pdEditSeparationDate').value.trim();
+            
+            if (canChangeLinks()) {
+                const oldSpouseId = person.spouseId;
+                person.fatherId = document.getElementById('pdEditFather').value ? parseInt(document.getElementById('pdEditFather').value) : null;
+                person.motherId = document.getElementById('pdEditMother').value ? parseInt(document.getElementById('pdEditMother').value) : null;
+                person.spouseId = document.getElementById('pdEditSpouse').value ? parseInt(document.getElementById('pdEditSpouse').value) : null;
+                
+                if (oldSpouseId && oldSpouseId !== person.spouseId) {
+                    const oldSpouse = personMap[oldSpouseId];
+                    if (oldSpouse) { oldSpouse.spouseId = null; try { await savePersonToFirebase(oldSpouse); } catch(e) {} }
+                }
+                if (person.spouseId) {
+                    const newSpouse = personMap[person.spouseId];
+                    if (newSpouse) {
+                        newSpouse.spouseId = personId;
+                        // Copy marriage dates to spouse too
+                        newSpouse.marriageDate = person.marriageDate;
+                        newSpouse.separationDate = person.separationDate;
+                        try { await savePersonToFirebase(newSpouse); } catch(e) {}
+                    }
+                }
+            }
+            
+            rebuildIndexes();
+            
+            try {
+                await savePersonToFirebase(person);
+                await logChange('edit', personId, oldData, { ...person }, `Edited ${person.name}`);
+            } catch (error) {
+                console.error('Error saving:', error);
+            }
+            
+            alert('Saved!');
+            refreshPeopleList();
+            renderTree();
+            showPersonDetail(personMap[personId]); // Back to view mode
+        }
+        
+        async function deletePersonFromDetail(personId) {
+            if (!canDelete()) return;
+            const person = personMap[personId];
+            if (!person) return;
+            if (!confirm(`Delete ${person.name}? This can be rolled back from the Admin Panel.`)) return;
+            
+            const oldData = { ...person };
+            familyData = familyData.filter(p => p.id !== personId);
+            const affected = [];
+            familyData.forEach(p => {
+                let changed = false;
+                if (p.spouseId === personId) { p.spouseId = null; changed = true; }
+                if (p.fatherId === personId) { p.fatherId = null; changed = true; }
+                if (p.motherId === personId) { p.motherId = null; changed = true; }
+                if (changed) affected.push(p);
+            });
+            rebuildIndexes();
+            calculateAllGenerations();
+            try {
+                await deletePersonFromFirebase(personId);
+                for (const p of affected) await savePersonToFirebase(p);
+                await logChange('delete', personId, oldData, null, `Deleted ${oldData.name}`);
+            } catch (e) { console.error(e); }
+            
+            closePersonDetail();
+            refreshPeopleList();
+            renderTree();
+            alert('Deleted.');
+        }
+        
+        function handlePersonImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            processImageFile(file);
+        }
+        
+        function processImageFile(file) {
+            if (!file.type.startsWith('image/')) {
+                alert('Please select an image file.');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                // Show preview in the image area
+                const imgArea = document.querySelector('.pd-image-area');
+                if (imgArea) {
+                    let img = imgArea.querySelector('img');
+                    if (!img) {
+                        img = document.createElement('img');
+                        imgArea.insertBefore(img, imgArea.firstChild);
+                    }
+                    img.src = e.target.result;
+                    // Hide the + placeholder
+                    const placeholder = imgArea.querySelector('div:not(.pd-image-overlay)');
+                    if (placeholder && placeholder.textContent === '+') placeholder.style.display = 'none';
+                }
+                
+                alert('Image preview loaded.\n\nTo save permanently:\n1. Upload this image to Google Drive\n2. Right-click the file → Share → "Anyone with link"\n3. Copy the file ID from the URL\n   (the long string between /d/ and /view)\n4. Paste the ID in the "Drive ID" field');
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        // Enable paste from clipboard (phone: copy image from Photos, then paste here)
+        document.addEventListener('paste', function(e) {
+            // Only handle paste when person detail edit mode is open
+            const modal = document.getElementById('personDetailModal');
+            if (!modal || modal.style.display === 'none') return;
+            if (!_detailEditMode) return;
+            
+            const items = e.clipboardData?.items;
+            if (!items) return;
+            
+            for (const item of items) {
+                if (item.type.startsWith('image/')) {
+                    e.preventDefault();
+                    const file = item.getAsFile();
+                    if (file) processImageFile(file);
+                    return;
+                }
+            }
+        });
         
         function closePersonDetail(event) {
             if (event) event.stopPropagation();
             const modal = document.getElementById('personDetailModal');
             if (modal) modal.style.display = 'none';
+        }
+        
+        async function addRelativeFromDetail(personId, relationship) {
+            if (!canEdit()) { alert('You must be signed in to add people.'); return; }
+            
+            const person = personMap[personId];
+            if (!person) return;
+            
+            const name = prompt(`Enter name for new ${relationship}:`);
+            if (!name || !name.trim()) return;
+            
+            const sex = prompt('Sex? (Male/Female)', relationship === 'spouse' ? (person.sex === 'Male' ? 'Female' : 'Male') : 'Male');
+            if (!sex) return;
+            
+            const maxId = Math.max(...familyData.map(p => p.id));
+            const newId = maxId + 1;
+            
+            const newPerson = {
+                id: newId, name: name.trim(), sex: sex,
+                born: '', until: '', spouseId: null, fatherId: null, motherId: null, imageId: ''
+            };
+            
+            if (relationship === 'spouse') {
+                if (!canChangeLinks()) { alert('Admin permissions required to set family links.'); return; }
+                newPerson.spouseId = personId;
+                person.spouseId = newId;
+                try { await savePersonToFirebase(person); } catch(e) {}
+            } else if (relationship === 'child') {
+                if (!canChangeLinks()) { alert('Admin permissions required to set family links.'); return; }
+                if (person.sex === 'Male') {
+                    newPerson.fatherId = personId;
+                    if (person.spouseId) newPerson.motherId = person.spouseId;
+                } else {
+                    newPerson.motherId = personId;
+                    if (person.spouseId) newPerson.fatherId = person.spouseId;
+                }
+            } else if (relationship === 'sibling') {
+                if (!canChangeLinks()) { alert('Admin permissions required to set family links.'); return; }
+                newPerson.fatherId = person.fatherId;
+                newPerson.motherId = person.motherId;
+            }
+            
+            familyData.push(newPerson);
+            rebuildIndexes();
+            calculateAllGenerations();
+            
+            try {
+                await savePersonToFirebase(newPerson);
+                await logChange('add', newId, null, newPerson, `Added ${name} as ${relationship} of ${person.name}`);
+            } catch(e) { console.error(e); }
+            
+            refreshPeopleList();
+            renderTree();
+            showPersonDetail(personMap[personId]); // Refresh the detail view
+        }
+        
+        function editPersonFromDetail(personId) {
+            const person = personMap[personId];
+            if (!person) return;
+            
+            if (!canEdit()) {
+                alert('You must be signed in as an editor to make changes.');
+                return;
+            }
+            
+            // Re-open the same modal in edit mode
+            showPersonDetail(person, true);
         }
         
         function showRelationshipTree(person1, person2, relationshipResult) {
@@ -3225,8 +3676,19 @@
                     </div>`);
                 }
                 
-                // Use cached children lookup
-                const children = getChildren(person.id);
+                // Get children from BOTH person AND spouse (children may be indexed under either parent)
+                const personChildren = getChildren(person.id);
+                const spouseChildren = spouse ? getChildren(spouse.id) : [];
+                
+                // Merge and deduplicate
+                const childSet = new Set(personChildren.map(c => c.id));
+                const children = [...personChildren];
+                for (const sc of spouseChildren) {
+                    if (!childSet.has(sc.id)) {
+                        children.push(sc);
+                        childSet.add(sc.id);
+                    }
+                }
                 
                 if (children.length > 0 && generation < maxRenderDepth) {
                     // Sort children by ID (ascending order) - sort in place to avoid new array
@@ -4038,7 +4500,10 @@ return `
                 
                 const div = document.createElement('div');
                 div.className = 'person-item';
-                div.onclick = () => selectPersonForEdit(person);
+                div.onclick = () => {
+                    closeDataManager();
+                    showPersonDetail(person);
+                };
                 div.innerHTML = `
                     <div class="person-item-name">${person.name} (ID: ${person.id})</div>
                     <div class="person-item-details">${person.sex}${details.length ? ' • ' + details.join(' • ') : ''}</div>
@@ -4094,7 +4559,12 @@ return `
             });
         }
         
-        function addPerson() {
+        async function addPerson() {
+            if (!canEdit()) {
+                alert('You must be signed in as an editor to add people.');
+                return;
+            }
+            
             const name = document.getElementById('addName').value.trim();
             const sex = document.getElementById('addSex').value;
             
@@ -4119,6 +4589,13 @@ return `
                 imageId: document.getElementById('addImageId').value.trim()
             };
             
+            // Editors can only set basic fields, not links
+            if (!canChangeLinks()) {
+                newPerson.spouseId = null;
+                newPerson.fatherId = null;
+                newPerson.motherId = null;
+            }
+            
             familyData.push(newPerson);
             
             // Update spouse's spouseId if spouse was selected
@@ -4126,12 +4603,22 @@ return `
                 const spouse = personMap[newPerson.spouseId];
                 if (spouse) {
                     spouse.spouseId = newId;
+                    // Save updated spouse to Firebase too
+                    try { await savePersonToFirebase(spouse); } catch(e) {}
                 }
             }
             
             // Rebuild all indexes
             rebuildIndexes();
             calculateAllGenerations();
+            
+            // Save to Firebase automatically
+            try {
+                await savePersonToFirebase(newPerson);
+                await logChange('add', newId, null, newPerson, `Added ${name}`);
+            } catch (error) {
+                console.error('Error saving new person to Firebase:', error);
+            }
             
             alert(`Added ${name} successfully!`);
             clearAddForm();
@@ -4150,11 +4637,19 @@ return `
             document.getElementById('addImageId').value = '';
         }
         
-        function savePerson() {
+        async function savePerson() {
+            if (!canEdit()) {
+                alert('You must be signed in as an editor to save changes.');
+                return;
+            }
+            
             const id = parseInt(document.getElementById('editId').value);
             const person = personMap[id];
             
             if (!person) return;
+            
+            // Capture old data BEFORE changes for audit trail
+            const oldData = { ...person };
             
             const oldSpouseId = person.spouseId;
             
@@ -4162,20 +4657,30 @@ return `
             person.sex = document.getElementById('editSex').value;
             person.born = document.getElementById('editBorn').value.trim();
             person.until = document.getElementById('editUntil').value.trim();
-            person.fatherId = document.getElementById('editFather').value ? parseInt(document.getElementById('editFather').value) : null;
-            person.motherId = document.getElementById('editMother').value ? parseInt(document.getElementById('editMother').value) : null;
-            person.spouseId = document.getElementById('editSpouse').value ? parseInt(document.getElementById('editSpouse').value) : null;
             person.imageId = document.getElementById('editImageId').value.trim();
             
-            // Update spouse relationships
-            if (oldSpouseId && oldSpouseId !== person.spouseId) {
-                const oldSpouse = personMap[oldSpouseId];
-                if (oldSpouse) oldSpouse.spouseId = null;
-            }
-            
-            if (person.spouseId) {
-                const newSpouse = personMap[person.spouseId];
-                if (newSpouse) newSpouse.spouseId = id;
+            // Only admins can change family links
+            if (canChangeLinks()) {
+                person.fatherId = document.getElementById('editFather').value ? parseInt(document.getElementById('editFather').value) : null;
+                person.motherId = document.getElementById('editMother').value ? parseInt(document.getElementById('editMother').value) : null;
+                person.spouseId = document.getElementById('editSpouse').value ? parseInt(document.getElementById('editSpouse').value) : null;
+                
+                // Update spouse relationships
+                if (oldSpouseId && oldSpouseId !== person.spouseId) {
+                    const oldSpouse = personMap[oldSpouseId];
+                    if (oldSpouse) {
+                        oldSpouse.spouseId = null;
+                        try { await savePersonToFirebase(oldSpouse); } catch(e) {}
+                    }
+                }
+                
+                if (person.spouseId) {
+                    const newSpouse = personMap[person.spouseId];
+                    if (newSpouse) {
+                        newSpouse.spouseId = id;
+                        try { await savePersonToFirebase(newSpouse); } catch(e) {}
+                    }
+                }
             }
             
             // Rebuild personMap to ensure consistency
@@ -4184,34 +4689,63 @@ return `
             // Update currentEditingPerson reference
             currentEditingPerson = personMap[id];
             
+            // Save to Firebase automatically
+            try {
+                await savePersonToFirebase(person);
+                await logChange('edit', id, oldData, { ...person }, `Edited ${person.name}`);
+            } catch (error) {
+                console.error('Error saving to Firebase:', error);
+            }
+            
             alert('Changes saved!');
             refreshPeopleList();
-            filterPeople(); // Update the main sidebar list
-            renderTree(); // Redraw the tree
+            filterPeople();
+            renderTree();
         }
         
-        function deletePerson() {
+        async function deletePerson() {
+            if (!canDelete()) {
+                alert('You need Admin permissions to delete people.');
+                return;
+            }
+            
             if (!currentEditingPerson) return;
             
-            if (!confirm(`Are you sure you want to delete ${currentEditingPerson.name}? This cannot be undone.`)) {
+            if (!confirm(`Are you sure you want to delete ${currentEditingPerson.name}? This can be rolled back from the Admin Panel's Change Log.`)) {
                 return;
             }
             
             const id = currentEditingPerson.id;
+            const oldData = { ...currentEditingPerson };
             
             // Remove from array
             familyData = familyData.filter(p => p.id !== id);
             
             // Clean up references
+            const affectedPeople = [];
             familyData.forEach(p => {
-                if (p.spouseId === id) p.spouseId = null;
-                if (p.fatherId === id) p.fatherId = null;
-                if (p.motherId === id) p.motherId = null;
+                let changed = false;
+                if (p.spouseId === id) { p.spouseId = null; changed = true; }
+                if (p.fatherId === id) { p.fatherId = null; changed = true; }
+                if (p.motherId === id) { p.motherId = null; changed = true; }
+                if (changed) affectedPeople.push(p);
             });
             
             // Rebuild all indexes after data change
             rebuildIndexes();
             calculateAllGenerations();
+            
+            // Save to Firebase
+            try {
+                await deletePersonFromFirebase(id);
+                // Save affected people with cleared references
+                for (const p of affectedPeople) {
+                    await savePersonToFirebase(p);
+                }
+                await logChange('delete', id, oldData, null, `Deleted ${oldData.name}`);
+            } catch (error) {
+                console.error('Error deleting from Firebase:', error);
+            }
             
             alert('Person deleted.');
             document.getElementById('editFormContainer').style.display = 'none';
@@ -4534,7 +5068,7 @@ return `
                     renderTree();
                     
                     // Save to Firebase if signed in
-                    if (isEditor) {
+                    if (canEdit()) {
                         if (confirm('Save imported data to Firebase cloud?')) {
                             saveAllToFirebase();
                         }
@@ -5150,59 +5684,354 @@ return `
     // ===== FIREBASE INTEGRATION =====
     
     let currentUser = null;
-    let isEditor = false;
+    let userRole = null; // 'superadmin', 'admin', 'editor', or null (viewer)
     
-    // ===== AUTHORIZED EDITORS WHITELIST =====
-    // Add Google email addresses that are allowed to edit
-    const AUTHORIZED_EDITORS = [
-        'venki.ayalur@gmail.com',  // Venki - Primary administrator
-        // Add more editors below as needed:
-        // 'family-member@gmail.com',
-    ];
+    // ===== ROLE HELPERS =====
+    function canDelete() { return userRole === 'superadmin' || userRole === 'admin'; }
+    function canEdit() { return userRole === 'superadmin' || userRole === 'admin' || userRole === 'editor'; }
+    function canChangeLinks() { return userRole === 'superadmin' || userRole === 'admin'; }
+    function canManageUsers() { return userRole === 'superadmin' || userRole === 'admin'; }
+    function isSuperAdmin() { return userRole === 'superadmin'; }
     
-    function isAuthorizedEditor(email) {
-        if (!email) return false;
-        return AUTHORIZED_EDITORS.includes(email.toLowerCase());
-    }
+    // Legacy compatibility: isEditor is now canEdit()
     
-    // Wait for Firebase to initialize
+    // ===== FIREBASE INITIALIZATION =====
     setTimeout(initializeFirebase, 1000);
     
     function initializeFirebase() {
         if (!window.firebaseAuth || !window.firebaseDB) {
-            debug('⏳ Waiting for Firebase...');
             setTimeout(initializeFirebase, 500);
             return;
         }
         
-        debug('🔥 Initializing Firebase integration...');
-        
-        // Monitor auth state
         const { onAuthStateChanged } = window.firebaseModules;
-        onAuthStateChanged(window.firebaseAuth, (user) => {
+        onAuthStateChanged(window.firebaseAuth, async (user) => {
             currentUser = user;
             
-            // Check if user is authorized
-            if (user && isAuthorizedEditor(user.email)) {
-                isEditor = true;
-                debug('✅ Signed in as authorized editor:', user.email);
-            } else if (user && !isAuthorizedEditor(user.email)) {
-                isEditor = false;
-                debug('⚠️ Signed in but not authorized:', user.email);
-                alert(`Sorry, ${user.email} is not authorized to edit. Contact the administrator to be added as an editor.`);
-                // Sign them out
-                const { signOut } = window.firebaseModules;
-                signOut(window.firebaseAuth);
+            if (user) {
+                // Look up user role from Firestore
+                await loadUserRole(user.email);
+                
+                if (!userRole) {
+                    alert(`${user.email} is not authorized. Contact the administrator to request access.`);
+                    const { signOut } = window.firebaseModules;
+                    signOut(window.firebaseAuth);
+                    return;
+                }
             } else {
-                isEditor = false;
-                debug('👤 Not signed in (read-only access)');
+                userRole = null;
             }
             
             updateAuthUI();
         });
         
-        // Load data from Firebase
         loadFromFirebase();
+    }
+    
+    // ===== USER ROLE MANAGEMENT (Firestore-based) =====
+    async function loadUserRole(email) {
+        try {
+            const { doc, getDoc } = window.firebaseModules;
+            const userRef = doc(window.firebaseDB, 'authorized_users', email.toLowerCase());
+            const snap = await getDoc(userRef);
+            
+            if (snap.exists()) {
+                userRole = snap.data().role || 'editor';
+            } else {
+                // Fallback: check if this is the hardcoded super admin (bootstrap case)
+                if (email.toLowerCase() === 'venki.ayalur@gmail.com') {
+                    userRole = 'superadmin';
+                    // Auto-create the super admin doc in Firestore
+                    await ensureUserInFirestore(email, 'superadmin', 'Auto-created (bootstrap)');
+                } else {
+                    userRole = null;
+                }
+            }
+        } catch (error) {
+            console.error('Error loading user role:', error);
+            // Fallback for bootstrap
+            if (email.toLowerCase() === 'venki.ayalur@gmail.com') {
+                userRole = 'superadmin';
+            } else {
+                userRole = null;
+            }
+        }
+    }
+    
+    async function ensureUserInFirestore(email, role, notes) {
+        try {
+            const { doc, setDoc, serverTimestamp } = window.firebaseModules;
+            const userRef = doc(window.firebaseDB, 'authorized_users', email.toLowerCase());
+            await setDoc(userRef, {
+                email: email.toLowerCase(),
+                role: role,
+                notes: notes || '',
+                addedBy: currentUser ? currentUser.email : 'system',
+                addedAt: serverTimestamp(),
+                active: true
+            }, { merge: true });
+        } catch (error) {
+            console.error('Error ensuring user in Firestore:', error);
+        }
+    }
+    
+    async function loadAuthorizedUsers() {
+        try {
+            const { collection, getDocs } = window.firebaseModules;
+            const usersRef = collection(window.firebaseDB, 'authorized_users');
+            const snapshot = await getDocs(usersRef);
+            const users = [];
+            snapshot.forEach(d => {
+                const data = d.data();
+                if (data.active !== false) users.push(data);
+            });
+            return users.sort((a, b) => {
+                const roleOrder = { superadmin: 0, admin: 1, editor: 2 };
+                return (roleOrder[a.role] || 3) - (roleOrder[b.role] || 3);
+            });
+        } catch (error) {
+            console.error('Error loading users:', error);
+            return [];
+        }
+    }
+    
+    async function addAuthorizedUser(email, role) {
+        if (!canManageUsers()) {
+            alert('You do not have permission to manage users.');
+            return false;
+        }
+        // Only superadmin can create other admins
+        if (role === 'admin' && !isSuperAdmin()) {
+            alert('Only Super Admins can create Admin users.');
+            return false;
+        }
+        if (role === 'superadmin') {
+            alert('Super Admin role cannot be assigned through the UI.');
+            return false;
+        }
+        try {
+            await ensureUserInFirestore(email, role, `Added by ${currentUser.email}`);
+            await logChange('user_added', null, null, { email, role }, `Added user ${email} as ${role}`);
+            return true;
+        } catch (error) {
+            console.error('Error adding user:', error);
+            alert('Error adding user: ' + error.message);
+            return false;
+        }
+    }
+    
+    async function removeAuthorizedUser(email) {
+        if (!canManageUsers()) {
+            alert('You do not have permission to manage users.');
+            return false;
+        }
+        if (email.toLowerCase() === 'venki.ayalur@gmail.com') {
+            alert('Cannot remove the primary Super Admin.');
+            return false;
+        }
+        if (email.toLowerCase() === currentUser.email.toLowerCase()) {
+            alert('Cannot remove yourself.');
+            return false;
+        }
+        try {
+            const { doc, updateDoc } = window.firebaseModules;
+            const userRef = doc(window.firebaseDB, 'authorized_users', email.toLowerCase());
+            await updateDoc(userRef, { active: false });
+            await logChange('user_removed', null, null, { email }, `Removed user ${email}`);
+            return true;
+        } catch (error) {
+            console.error('Error removing user:', error);
+            return false;
+        }
+    }
+    
+    async function updateUserRole(email, newRole) {
+        if (!canManageUsers()) return false;
+        if (newRole === 'admin' && !isSuperAdmin()) {
+            alert('Only Super Admins can assign Admin role.');
+            return false;
+        }
+        if (newRole === 'superadmin') {
+            alert('Super Admin role cannot be assigned through the UI.');
+            return false;
+        }
+        try {
+            const { doc, updateDoc } = window.firebaseModules;
+            const userRef = doc(window.firebaseDB, 'authorized_users', email.toLowerCase());
+            await updateDoc(userRef, { role: newRole });
+            await logChange('user_role_changed', null, null, { email, newRole }, `Changed ${email} role to ${newRole}`);
+            return true;
+        } catch (error) {
+            console.error('Error updating user role:', error);
+            return false;
+        }
+    }
+    
+    // ===== AUDIT TRAIL / CHANGE LOG =====
+    // Remove undefined values that Firestore rejects
+    function sanitizeForFirestore(obj) {
+        if (!obj || typeof obj !== 'object') return obj;
+        const clean = {};
+        for (const [key, val] of Object.entries(obj)) {
+            if (val !== undefined) {
+                clean[key] = val === null ? null : val;
+            }
+        }
+        return clean;
+    }
+    
+    async function logChange(action, personId, oldData, newData, description) {
+        try {
+            const { collection, addDoc, serverTimestamp } = window.firebaseModules;
+            // Don't sanitize the top-level doc — serverTimestamp() sentinel must not be copied
+            // Only sanitize nested oldData/newData which may contain undefined fields
+            await addDoc(collection(window.firebaseDB, 'change_log'), {
+                action: action,
+                personId: personId || null,
+                oldData: oldData ? sanitizeForFirestore(oldData) : null,
+                newData: newData ? sanitizeForFirestore(newData) : null,
+                description: description || '',
+                userEmail: currentUser ? currentUser.email : 'unknown',
+                userRole: userRole || 'unknown',
+                timestamp: serverTimestamp()
+            });
+        } catch (error) {
+            console.error('Error logging change:', error);
+        }
+    }
+    
+    async function getChangeLog(limitCount) {
+        try {
+            const { collection, getDocs, query, orderBy, limit } = window.firebaseModules;
+            
+            // Try with orderBy first (requires Firestore composite index)
+            try {
+                const q = query(
+                    collection(window.firebaseDB, 'change_log'),
+                    orderBy('timestamp', 'desc'),
+                    limit(limitCount || 50)
+                );
+                const snapshot = await getDocs(q);
+                const logs = [];
+                snapshot.forEach(d => {
+                    const data = d.data();
+                    data._id = d.id;
+                    logs.push(data);
+                });
+                if (logs.length > 0) return logs;
+            } catch (indexError) {
+                // orderBy query failed - likely missing Firestore index
+                // Firestore error includes a URL to create the index
+                const errMsg = indexError.message || '';
+                if (errMsg.includes('index')) {
+                    console.warn('Firestore index needed for change_log. Falling back to unordered query. Create the index at:', errMsg.match(/https:\/\/[^\s]*/)?.[0] || 'Firebase Console > Firestore > Indexes');
+                }
+            }
+            
+            // Fallback: get all docs without ordering (no index required)
+            const snapshot = await getDocs(collection(window.firebaseDB, 'change_log'));
+            const logs = [];
+            snapshot.forEach(d => {
+                const data = d.data();
+                data._id = d.id;
+                logs.push(data);
+            });
+            // Sort client-side
+            logs.sort((a, b) => {
+                const ta = a.timestamp?.seconds || 0;
+                const tb = b.timestamp?.seconds || 0;
+                return tb - ta;
+            });
+            return logs.slice(0, limitCount || 50);
+        } catch (error) {
+            console.error('Error loading change log:', error);
+            return [];
+        }
+    }
+    
+    async function rollbackChange(logEntry) {
+        if (!canDelete()) {
+            alert('Only Admins can rollback changes.');
+            return;
+        }
+        
+        try {
+            if (logEntry.action === 'edit' && logEntry.oldData) {
+                // Restore the old data
+                const person = personMap[logEntry.personId];
+                if (person) {
+                    Object.assign(person, logEntry.oldData);
+                    rebuildIndexes();
+                    calculateAllGenerations();
+                    await savePersonToFirebase(person);
+                    await logChange('rollback_edit', logEntry.personId, null, logEntry.oldData, 
+                        `Rolled back edit on ${logEntry.oldData.name || 'ID ' + logEntry.personId}`);
+                    renderTree();
+                    refreshPeopleList();
+                    alert('Rollback successful!');
+                }
+            } else if (logEntry.action === 'delete' && logEntry.oldData) {
+                // Re-add the deleted person
+                familyData.push(logEntry.oldData);
+                rebuildIndexes();
+                calculateAllGenerations();
+                await savePersonToFirebase(logEntry.oldData);
+                await logChange('rollback_delete', logEntry.personId, null, logEntry.oldData,
+                    `Restored deleted person: ${logEntry.oldData.name}`);
+                renderTree();
+                refreshPeopleList();
+                alert('Person restored successfully!');
+            } else if (logEntry.action === 'add' && logEntry.personId) {
+                // Remove the added person
+                const person = personMap[logEntry.personId];
+                if (person) {
+                    familyData = familyData.filter(p => p.id !== logEntry.personId);
+                    familyData.forEach(p => {
+                        if (p.spouseId === logEntry.personId) p.spouseId = null;
+                        if (p.fatherId === logEntry.personId) p.fatherId = null;
+                        if (p.motherId === logEntry.personId) p.motherId = null;
+                    });
+                    rebuildIndexes();
+                    calculateAllGenerations();
+                    await deletePersonFromFirebase(logEntry.personId);
+                    await logChange('rollback_add', logEntry.personId, null, null,
+                        `Rolled back addition of ${logEntry.newData?.name || 'ID ' + logEntry.personId}`);
+                    renderTree();
+                    refreshPeopleList();
+                    alert('Rollback successful - person removed.');
+                }
+            } else {
+                alert('This change cannot be automatically rolled back. Use the Data Manager to make manual corrections.');
+            }
+        } catch (error) {
+            console.error('Rollback error:', error);
+            alert('Rollback failed: ' + error.message);
+        }
+    }
+    
+    // ===== FIREBASE DATA OPERATIONS =====
+    async function savePersonToFirebase(person) {
+        if (!canEdit()) return;
+        try {
+            const { doc, setDoc } = window.firebaseModules;
+            const personRef = doc(window.firebaseDB, 'people', `person_${person.id}`);
+            await setDoc(personRef, sanitizeForFirestore(person));
+        } catch (error) {
+            console.error('Error saving person to Firebase:', error);
+            throw error;
+        }
+    }
+    
+    async function deletePersonFromFirebase(personId) {
+        if (!canDelete()) return;
+        try {
+            const { doc, deleteDoc } = window.firebaseModules;
+            const personRef = doc(window.firebaseDB, 'people', `person_${personId}`);
+            await deleteDoc(personRef);
+        } catch (error) {
+            console.error('Error deleting person from Firebase:', error);
+            throw error;
+        }
     }
     
     async function loadFromFirebase() {
@@ -5213,41 +6042,28 @@ return `
             
             if (!snapshot.empty) {
                 const firebaseData = [];
-                snapshot.forEach((doc) => {
-                    firebaseData.push(doc.data());
+                snapshot.forEach((d) => {
+                    firebaseData.push(d.data());
                 });
                 
-                debug(`🔥 Loaded ${firebaseData.length} people from Firebase`);
-                
-                // Debug: Check imageId in first few people
-                const peopleWithImages = firebaseData.filter(p => p.imageId).length;
-                debug(`📸 People with images: ${peopleWithImages}`);
-                const sampleWithImage = firebaseData.find(p => p.imageId);
-                if (sampleWithImage) {
-                    debug(`Sample person with image:`, sampleWithImage.id, sampleWithImage.name, 'imageId:', sampleWithImage.imageId);
-                }
-                
-                // Replace current data
                 familyData = firebaseData;
                 rebuildIndexes();
-                
-                // Update UI
+                calculateAllGenerations();
                 renderTree();
+                refreshPeopleList();
             } else {
                 debug('📭 No data in Firebase yet. Using local data.');
-                // Optionally: upload current data to Firebase
                 if (confirm('No data found in Firebase. Upload current data to cloud?')) {
                     await saveAllToFirebase();
                 }
             }
         } catch (error) {
-            console.error('❌ Error loading from Firebase:', error);
-            debug('Using local data instead');
+            console.error('Error loading from Firebase:', error);
         }
     }
     
     async function saveAllToFirebase() {
-        if (!isEditor) {
+        if (!canEdit()) {
             alert('You must be signed in as an editor to save data.');
             return;
         }
@@ -5255,44 +6071,64 @@ return `
         try {
             const { doc, setDoc } = window.firebaseModules;
             
-            debug(`💾 Saving ${familyData.length} people to Firebase...`);
-            
-            // Debug: Check how many have imageId
-            const peopleWithImages = familyData.filter(p => p.imageId).length;
-            debug(`📸 People with imageId in current data: ${peopleWithImages}`);
-            const sampleWithImage = familyData.find(p => p.imageId);
-            if (sampleWithImage) {
-                debug(`Sample before save:`, sampleWithImage.id, sampleWithImage.name, 'imageId:', sampleWithImage.imageId);
-            }
-            
             for (const person of familyData) {
                 const personRef = doc(window.firebaseDB, 'people', `person_${person.id}`);
                 await setDoc(personRef, person);
             }
             
-            debug('✅ All data saved to Firebase!');
+            await logChange('bulk_save', null, null, { count: familyData.length }, 
+                `Bulk saved ${familyData.length} people`);
+            
             alert(`Successfully saved ${familyData.length} people to Firebase!`);
         } catch (error) {
-            console.error('❌ Error saving to Firebase:', error);
+            console.error('Error saving to Firebase:', error);
             alert('Error saving to Firebase: ' + error.message);
         }
     }
     
+    // ===== AUTH UI =====
     function updateAuthUI() {
         const authStatus = document.getElementById('authStatus');
         const authBtn = document.getElementById('authBtn');
         const authEmailDisplay = document.getElementById('authEmail');
+        const adminBtn = document.getElementById('adminPanelBtn');
+        const authRoleDisplay = document.getElementById('authRole');
         
-        if (isEditor && currentUser) {
+        if (userRole && currentUser) {
             authStatus.style.display = 'block';
             authBtn.style.display = 'none';
-            if (authEmailDisplay) {
-                authEmailDisplay.textContent = currentUser.email;
+            if (authEmailDisplay) authEmailDisplay.textContent = currentUser.email;
+            if (authRoleDisplay) {
+                const roleLabels = { superadmin: 'Super Admin', admin: 'Admin', editor: 'Editor' };
+                authRoleDisplay.textContent = roleLabels[userRole] || userRole;
             }
+            if (adminBtn) adminBtn.style.display = canManageUsers() ? 'block' : 'none';
         } else {
             authStatus.style.display = 'none';
             authBtn.style.display = 'block';
+            if (adminBtn) adminBtn.style.display = 'none';
         }
+        
+        // Update Data Manager button visibility based on permissions
+        updateDataManagerPermissions();
+    }
+    
+    function updateDataManagerPermissions() {
+        // Hide/show delete button based on role
+        const deleteBtn = document.querySelector('button[onclick="deletePerson()"]');
+        if (deleteBtn) deleteBtn.style.display = canDelete() ? '' : 'none';
+        
+        // Hide/show link-editing fields for editors
+        const linkFields = ['editFather', 'editMother', 'editSpouse'];
+        linkFields.forEach(fieldId => {
+            const field = document.getElementById(fieldId);
+            if (field) {
+                field.disabled = !canChangeLinks();
+                if (!canChangeLinks()) {
+                    field.title = 'You need Admin permissions to change family links';
+                }
+            }
+        });
     }
     
     function openAuthModal() {
@@ -5311,37 +6147,23 @@ return `
         if (!window.firebaseAuth || !window.googleProvider) {
             errorDiv.textContent = 'Firebase not initialized. Please refresh the page.';
             errorDiv.style.display = 'block';
-            console.error('Firebase Auth not available');
             return;
         }
         
         try {
             const { signInWithPopup } = window.firebaseModules;
-            debug('🔑 Calling Google Sign In...');
             const result = await signInWithPopup(window.firebaseAuth, window.googleProvider);
-            debug('✅ Google sign in successful:', result.user.email);
-            
             closeAuthModal();
-            alert('Signed in with Google successfully! You can now edit family data.');
         } catch (error) {
-            console.error('❌ Google sign in error:', error.code, error.message);
+            console.error('Google sign in error:', error.code, error.message);
             
             let errorMessage = '';
             switch (error.code) {
-                case 'auth/popup-closed-by-user':
-                    errorMessage = 'Sign-in popup was closed. Please try again.';
-                    break;
-                case 'auth/popup-blocked':
-                    errorMessage = 'Pop-up was blocked by browser. Please allow pop-ups and try again.';
-                    break;
-                case 'auth/cancelled-popup-request':
-                    errorMessage = 'Sign-in cancelled. Please try again.';
-                    break;
-                case 'auth/unauthorized-domain':
-                    errorMessage = 'This domain is not authorized. Please add it to Firebase Console.';
-                    break;
-                default:
-                    errorMessage = error.message;
+                case 'auth/popup-closed-by-user': errorMessage = 'Sign-in popup was closed. Please try again.'; break;
+                case 'auth/popup-blocked': errorMessage = 'Pop-up was blocked by browser. Please allow pop-ups and try again.'; break;
+                case 'auth/cancelled-popup-request': errorMessage = 'Sign-in cancelled. Please try again.'; break;
+                case 'auth/unauthorized-domain': errorMessage = 'This domain is not authorized. Add it to Firebase Console.'; break;
+                default: errorMessage = error.message;
             }
             
             errorDiv.textContent = errorMessage;
@@ -5353,11 +6175,180 @@ return `
         try {
             const { signOut } = window.firebaseModules;
             await signOut(window.firebaseAuth);
+            userRole = null;
+            updateAuthUI();
             alert('Signed out successfully.');
         } catch (error) {
             console.error('Sign out error:', error);
-            alert('Error signing out: ' + error.message);
         }
+    }
+    
+    // ===== ADMIN PANEL =====
+    function openAdminPanel() {
+        const modal = document.getElementById('adminModal');
+        modal.classList.add('active');
+        loadAdminPanelData();
+    }
+    
+    function closeAdminPanel() {
+        const modal = document.getElementById('adminModal');
+        modal.classList.remove('active');
+    }
+    
+    function switchAdminTab(tabName) {
+        document.querySelectorAll('#adminModal .data-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('#adminModal .tab-content').forEach(t => t.style.display = 'none');
+        
+        event.currentTarget.classList.add('active');
+        document.getElementById(`admin-tab-${tabName}`).style.display = 'block';
+        
+        if (tabName === 'users') loadAdminUsersTab();
+        if (tabName === 'changelog') loadAdminChangelogTab();
+    }
+    
+    async function loadAdminPanelData() {
+        await loadAdminUsersTab();
+    }
+    
+    async function loadAdminUsersTab() {
+        const container = document.getElementById('adminUsersList');
+        container.innerHTML = '<div style="color: var(--gold-300); padding: 20px; text-align: center;">Loading users...</div>';
+        
+        const users = await loadAuthorizedUsers();
+        
+        if (users.length === 0) {
+            container.innerHTML = '<div style="color: var(--parchment); padding: 20px; text-align: center; opacity: 0.7;">No users found. The bootstrap admin will be auto-created on first sign-in.</div>';
+            return;
+        }
+        
+        let html = '';
+        users.forEach(u => {
+            const roleLabels = { superadmin: 'Super Admin', admin: 'Admin', editor: 'Editor' };
+            const roleLabel = roleLabels[u.role] || u.role;
+            const isSelf = currentUser && u.email === currentUser.email.toLowerCase();
+            const isProtected = u.email === 'venki.ayalur@gmail.com';
+            
+            let roleSelector = '';
+            if (!isProtected && !isSelf && canManageUsers()) {
+                const options = isSuperAdmin() 
+                    ? '<option value="admin">Admin</option><option value="editor">Editor</option>'
+                    : '<option value="editor">Editor</option>';
+                roleSelector = `<select onchange="updateUserRole('${u.email}', this.value)" style="background: var(--bark-700); color: var(--parchment); border: 1px solid var(--gold-500); border-radius: 4px; padding: 4px 8px; font-size: 12px;">
+                    <option value="${u.role}" selected>${roleLabel}</option>
+                    ${options}
+                </select>`;
+            } else {
+                roleSelector = `<span style="color: var(--gold-400); font-size: 13px;">${roleLabel}</span>`;
+            }
+            
+            const removeBtn = (!isProtected && !isSelf && canManageUsers()) 
+                ? `<button onclick="confirmRemoveUser('${u.email}')" style="background: rgba(255,107,157,0.2); border: 1px solid var(--rose-500); color: var(--rose-400); border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 12px;">Remove</button>`
+                : '';
+            
+            html += `<div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: rgba(248,246,240,0.04); border-radius: 8px; margin-bottom: 8px;">
+                <div style="flex: 1;">
+                    <div style="color: var(--parchment); font-weight: 500;">${u.email}${isSelf ? ' <span style="color: var(--gold-400); font-size: 11px;">(you)</span>' : ''}</div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    ${roleSelector}
+                    ${removeBtn}
+                </div>
+            </div>`;
+        });
+        
+        container.innerHTML = html;
+    }
+    
+    async function handleAddUser() {
+        const emailInput = document.getElementById('newUserEmail');
+        const roleSelect = document.getElementById('newUserRole');
+        const email = emailInput.value.trim().toLowerCase();
+        const role = roleSelect.value;
+        
+        if (!email || !email.includes('@')) {
+            alert('Please enter a valid email address.');
+            return;
+        }
+        
+        const success = await addAuthorizedUser(email, role);
+        if (success) {
+            emailInput.value = '';
+            alert(`${email} added as ${role}!`);
+            await loadAdminUsersTab();
+        }
+    }
+    
+    async function confirmRemoveUser(email) {
+        if (confirm(`Remove ${email} from authorized users? They will no longer be able to edit.`)) {
+            const success = await removeAuthorizedUser(email);
+            if (success) {
+                alert(`${email} removed.`);
+                await loadAdminUsersTab();
+            }
+        }
+    }
+    
+    async function loadAdminChangelogTab() {
+        const container = document.getElementById('adminChangelogList');
+        container.innerHTML = '<div style="color: var(--gold-300); padding: 20px; text-align: center;">Loading change history...</div>';
+        
+        const logs = await getChangeLog(50);
+        
+        if (logs.length === 0) {
+            container.innerHTML = '<div style="color: var(--parchment); padding: 20px; text-align: center; opacity: 0.7;">No changes recorded yet.</div>';
+            return;
+        }
+        
+        let html = '';
+        logs.forEach(log => {
+            const ts = log.timestamp ? new Date(log.timestamp.seconds * 1000) : null;
+            const timeStr = ts ? ts.toLocaleString() : 'Unknown time';
+            
+            const actionIcons = {
+                'add': '+', 'edit': 'E', 'delete': 'D', 'bulk_save': 'S',
+                'rollback_edit': 'R', 'rollback_delete': 'R', 'rollback_add': 'R',
+                'user_added': 'U', 'user_removed': 'U', 'user_role_changed': 'U'
+            };
+            const icon = actionIcons[log.action] || '📝';
+            
+            // Show rollback button for edit/delete/add actions (not for rollbacks themselves)
+            const canRollback = canDelete() && ['edit', 'delete', 'add'].includes(log.action) && (log.oldData || log.newData);
+            const rollbackBtn = canRollback 
+                ? `<button onclick="handleRollback('${log._id}')" style="background: rgba(244,162,97,0.2); border: 1px solid var(--gold-500); color: var(--gold-400); border-radius: 4px; padding: 2px 8px; cursor: pointer; font-size: 11px;">Rollback</button>`
+                : '';
+            
+            html += `<div style="padding: 10px; background: rgba(248,246,240,0.03); border-radius: 6px; margin-bottom: 6px; border-left: 3px solid ${log.action.includes('rollback') ? 'var(--sage-500)' : log.action === 'delete' ? 'var(--rose-500)' : 'var(--gold-500)'};" data-log-id="${log._id}" data-log='${JSON.stringify(log).replace(/'/g, "&#39;")}'>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="color: var(--parchment); font-size: 13px;">${icon} <strong>${log.action}</strong> — ${log.description || ''}</div>
+                    ${rollbackBtn}
+                </div>
+                <div style="color: var(--parchment); opacity: 0.5; font-size: 11px; margin-top: 4px;">
+                    ${timeStr} by ${log.userEmail} (${log.userRole})
+                </div>
+            </div>`;
+        });
+        
+        container.innerHTML = html;
+    }
+    
+    async function handleRollback(logId) {
+        // Find the log entry from the DOM data attribute
+        const logEl = document.querySelector(`[data-log-id="${logId}"]`);
+        if (!logEl) return;
+        
+        let logData;
+        try {
+            logData = JSON.parse(logEl.getAttribute('data-log'));
+        } catch (e) {
+            alert('Could not parse change data.');
+            return;
+        }
+        
+        const desc = logData.description || logData.action;
+        if (!confirm(`Rollback this change?\n\n${desc}\n\nThis will undo the change and create a new audit log entry.`)) return;
+        
+        await rollbackChange(logData);
+        await loadAdminChangelogTab();
     }
     
     // ===== LAUNCH SCREEN & TREE VIEW CONFIGURATION =====
@@ -5649,7 +6640,7 @@ return `
     <div class="data-manager-modal" id="authModal">
         <div class="data-manager-content" style="max-width: 450px;">
             <div class="data-manager-header">
-                <h2>🔑 Editor Sign In</h2>
+                <h2>Editor Sign In</h2>
                 <button class="data-manager-close" onclick="closeAuthModal()">×</button>
             </div>
             <div class="data-manager-body">
@@ -5766,6 +6757,50 @@ return `
                 <p style="color: var(--gold-200); margin-top: 25px; font-size: 13px; opacity: 0.8;">
                     💡 Your theme choice is saved automatically and persists across sessions!
                 </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Panel Modal -->
+    <div class="data-manager-modal" id="adminModal">
+        <div class="data-manager-content" style="max-width: 700px;">
+            <div class="data-manager-header">
+                <h2>Admin Panel</h2>
+                <button class="data-manager-close" onclick="closeAdminPanel()">×</button>
+            </div>
+            <div class="data-manager-body">
+                <div class="data-tabs" style="margin-bottom: 20px;">
+                    <button class="data-tab active" onclick="switchAdminTab('users')">Users</button>
+                    <button class="data-tab" onclick="switchAdminTab('changelog')">Change Log</button>
+                </div>
+                
+                <!-- Users Tab -->
+                <div class="tab-content" id="admin-tab-users">
+                    <div style="margin-bottom: 20px; padding: 15px; background: rgba(248,246,240,0.05); border-radius: 8px;">
+                        <div style="color: var(--gold-300); font-weight: 600; margin-bottom: 10px;">Add New User</div>
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                            <input type="email" id="newUserEmail" placeholder="email@gmail.com" 
+                                style="flex: 1; min-width: 200px; padding: 8px 12px; background: var(--bark-700); border: 1px solid var(--gold-500); border-radius: 6px; color: var(--parchment); font-size: 14px;">
+                            <select id="newUserRole" style="padding: 8px 12px; background: var(--bark-700); border: 1px solid var(--gold-500); border-radius: 6px; color: var(--parchment); font-size: 14px;">
+                                <option value="editor">Editor</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                            <button onclick="handleAddUser()" style="padding: 8px 16px; background: var(--gold-500); color: var(--bark-900); border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Add</button>
+                        </div>
+                        <div style="color: var(--parchment); opacity: 0.5; font-size: 12px; margin-top: 8px;">
+                            <strong>Roles:</strong> Super Admin (full control) • Admin (CRUD + manage users) • Editor (add/edit people, no delete or link changes)
+                        </div>
+                    </div>
+                    <div id="adminUsersList"></div>
+                </div>
+                
+                <!-- Change Log Tab -->
+                <div class="tab-content" id="admin-tab-changelog" style="display: none;">
+                    <div style="color: var(--parchment); opacity: 0.6; font-size: 13px; margin-bottom: 15px;">
+                        Recent changes to family data. Admins can rollback individual changes.
+                    </div>
+                    <div id="adminChangelogList" style="max-height: 500px; overflow-y: auto;"></div>
+                </div>
             </div>
         </div>
     </div>
