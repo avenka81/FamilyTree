@@ -10,7 +10,7 @@
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
         import { getFirestore, collection, getDocs, doc, setDoc, deleteDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
-        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
+        import { getAuth, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
         
         const firebaseConfig = {
             apiKey: "AIzaSyBwAUQHnYdxKCbtQYyK2h3aCwo4MicAlQw",
@@ -25,14 +25,16 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
+        const googleProvider = new GoogleAuthProvider();
         
         // Make Firebase available globally
         window.firebaseApp = app;
         window.firebaseDB = db;
         window.firebaseAuth = auth;
+        window.googleProvider = googleProvider;
         window.firebaseModules = {
             collection, getDocs, doc, setDoc, deleteDoc, onSnapshot,
-            signInWithEmailAndPassword, signOut, onAuthStateChanged
+            signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged
         };
         
         console.log('🔥 Firebase initialized successfully');
@@ -2115,7 +2117,7 @@
             </select>
             <button class="launch-btn" onclick="validateAndLaunch()">View Tree</button>
             <div class="launch-error" id="launchError">Invalid selection. Please try again.</div>
-            <div style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); color: var(--gold-300); font-size: 12px; opacity: 0.7;">v8.0.2-debug</div>
+            <div style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); color: var(--gold-300); font-size: 12px; opacity: 0.7;">v8.2.0</div>
         </div>
     </div>
     
@@ -5467,6 +5469,19 @@ return `
     let currentUser = null;
     let isEditor = false;
     
+    // ===== AUTHORIZED EDITORS WHITELIST =====
+    // Add Google email addresses that are allowed to edit
+    const AUTHORIZED_EDITORS = [
+        'venki.ayalur@gmail.com',  // Venki - Primary administrator
+        // Add more editors below as needed:
+        // 'family-member@gmail.com',
+    ];
+    
+    function isAuthorizedEditor(email) {
+        if (!email) return false;
+        return AUTHORIZED_EDITORS.includes(email.toLowerCase());
+    }
+    
     // Wait for Firebase to initialize
     setTimeout(initializeFirebase, 1000);
     
@@ -5483,14 +5498,24 @@ return `
         const { onAuthStateChanged } = window.firebaseModules;
         onAuthStateChanged(window.firebaseAuth, (user) => {
             currentUser = user;
-            isEditor = !!user;
-            updateAuthUI();
             
-            if (user) {
-                console.log('✅ Signed in as:', user.email);
+            // Check if user is authorized
+            if (user && isAuthorizedEditor(user.email)) {
+                isEditor = true;
+                console.log('✅ Signed in as authorized editor:', user.email);
+            } else if (user && !isAuthorizedEditor(user.email)) {
+                isEditor = false;
+                console.log('⚠️ Signed in but not authorized:', user.email);
+                alert(`Sorry, ${user.email} is not authorized to edit. Contact the administrator to be added as an editor.`);
+                // Sign them out
+                const { signOut } = window.firebaseModules;
+                signOut(window.firebaseAuth);
             } else {
+                isEditor = false;
                 console.log('👤 Not signed in (read-only access)');
             }
+            
+            updateAuthUI();
         });
         
         // Load data from Firebase
@@ -5606,23 +5631,10 @@ return `
         }, 300);
     }
     
-    async function handleSignIn() {
-        const emailInput = document.getElementById('authEmailInput');
-        const passwordInput = document.getElementById('authPasswordInput');
+    async function handleGoogleSignIn() {
         const errorDiv = document.getElementById('authError');
         
-        const email = emailInput.value.trim();
-        const password = passwordInput.value;
-        
-        console.log('🔐 Attempting sign in for:', email);
-        
-        if (!email || !password) {
-            errorDiv.textContent = 'Please enter email and password';
-            errorDiv.style.display = 'block';
-            return;
-        }
-        
-        if (!window.firebaseAuth) {
+        if (!window.firebaseAuth || !window.googleProvider) {
             errorDiv.textContent = 'Firebase not initialized. Please refresh the page.';
             errorDiv.style.display = 'block';
             console.error('Firebase Auth not available');
@@ -5630,32 +5642,29 @@ return `
         }
         
         try {
-            const { signInWithEmailAndPassword } = window.firebaseModules;
-            console.log('🔑 Calling Firebase signIn...');
-            const userCredential = await signInWithEmailAndPassword(window.firebaseAuth, email, password);
-            console.log('✅ Sign in successful:', userCredential.user.email);
+            const { signInWithPopup } = window.firebaseModules;
+            console.log('🔑 Calling Google Sign In...');
+            const result = await signInWithPopup(window.firebaseAuth, window.googleProvider);
+            console.log('✅ Google sign in successful:', result.user.email);
             
             closeAuthModal();
-            alert('Signed in successfully! You can now edit family data.');
+            alert('Signed in with Google successfully! You can now edit family data.');
         } catch (error) {
-            console.error('❌ Sign in error:', error.code, error.message);
+            console.error('❌ Google sign in error:', error.code, error.message);
             
             let errorMessage = '';
             switch (error.code) {
-                case 'auth/invalid-email':
-                    errorMessage = 'Invalid email address format.';
+                case 'auth/popup-closed-by-user':
+                    errorMessage = 'Sign-in popup was closed. Please try again.';
                     break;
-                case 'auth/user-not-found':
-                    errorMessage = 'No user found with this email.';
+                case 'auth/popup-blocked':
+                    errorMessage = 'Pop-up was blocked by browser. Please allow pop-ups and try again.';
                     break;
-                case 'auth/wrong-password':
-                    errorMessage = 'Incorrect password.';
+                case 'auth/cancelled-popup-request':
+                    errorMessage = 'Sign-in cancelled. Please try again.';
                     break;
-                case 'auth/invalid-credential':
-                    errorMessage = 'Invalid credentials. Please check your email and password.';
-                    break;
-                case 'auth/too-many-requests':
-                    errorMessage = 'Too many failed attempts. Please try again later.';
+                case 'auth/unauthorized-domain':
+                    errorMessage = 'This domain is not authorized. Please add it to Firebase Console.';
                     break;
                 default:
                     errorMessage = error.message;
@@ -5971,20 +5980,22 @@ return `
             </div>
             <div class="data-manager-body">
                 <p style="color: var(--gold-200); margin-bottom: 20px;">
-                    Sign in with your editor account to modify family data.
+                    Sign in with your Google account to modify family data. Only authorized editors can make changes.
                 </p>
-                <div style="margin-bottom: 15px;">
-                    <label style="display: block; margin-bottom: 5px; color: var(--gold-300); font-weight: 600;">Email</label>
-                    <input type="email" id="authEmailInput" placeholder="editor@example.com" style="width: 100%; padding: 12px; background: var(--bark-800); border: 2px solid var(--gold-400); border-radius: 6px; color: var(--cream); font-size: 14px;">
-                </div>
-                <div style="margin-bottom: 20px;">
-                    <label style="display: block; margin-bottom: 5px; color: var(--gold-300); font-weight: 600;">Password</label>
-                    <input type="password" id="authPasswordInput" placeholder="••••••••" style="width: 100%; padding: 12px; background: var(--bark-800); border: 2px solid var(--gold-400); border-radius: 6px; color: var(--cream); font-size: 14px;">
-                </div>
+                
                 <div id="authError" style="display: none; padding: 12px; background: rgba(255, 107, 157, 0.2); border: 1px solid var(--rose-500); border-radius: 6px; color: var(--rose-400); margin-bottom: 15px; font-size: 14px;"></div>
-                <button onclick="handleSignIn()" style="width: 100%; padding: 15px; background: linear-gradient(135deg, var(--gold-500), var(--gold-400)); border: none; border-radius: 8px; color: var(--bark-900); font-weight: 700; font-size: 16px; cursor: pointer; transition: all 0.3s;">
-                    Sign In
+                
+                <!-- Google Sign In Button -->
+                <button onclick="handleGoogleSignIn()" style="width: 100%; padding: 15px; background: white; border: 2px solid #ddd; border-radius: 8px; color: #444; font-weight: 600; font-size: 16px; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                    <svg width="20" height="20" viewBox="0 0 48 48">
+                        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+                        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+                    </svg>
+                    Sign in with Google
                 </button>
+                
                 <p style="color: var(--parchment); opacity: 0.6; font-size: 13px; margin-top: 15px; text-align: center;">
                     Read-only access doesn't require sign-in.
                 </p>
