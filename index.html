@@ -11,6 +11,7 @@
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
         import { getFirestore, collection, getDocs, doc, setDoc, deleteDoc, onSnapshot, addDoc, updateDoc, getDoc, query, where, orderBy, limit, serverTimestamp, Timestamp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
         import { getAuth, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
+        import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js';
         
         const firebaseConfig = {
             apiKey: "AIzaSyBwAUQHnYdxKCbtQYyK2h3aCwo4MicAlQw",
@@ -25,17 +26,20 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
+        const storage = getStorage(app);
         const googleProvider = new GoogleAuthProvider();
         
         // Make Firebase available globally
         window.firebaseApp = app;
         window.firebaseDB = db;
         window.firebaseAuth = auth;
+        window.firebaseStorage = storage;
         window.googleProvider = googleProvider;
         window.firebaseModules = {
             collection, getDocs, doc, setDoc, deleteDoc, onSnapshot,
             addDoc, updateDoc, getDoc, query, where, orderBy, limit, serverTimestamp, Timestamp,
-            signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged
+            signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged,
+            storageRef, uploadBytes, getDownloadURL
         };
         
         console.log('🔥 Firebase initialized successfully');
@@ -1991,6 +1995,71 @@
         .pd-image-area:hover .pd-image-overlay {
             display: block;
         }
+        
+        /* Image crop modal */
+        .crop-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.9);
+            z-index: 20000;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .crop-modal.active { display: flex; }
+        .crop-container {
+            position: relative;
+            max-width: 90vw;
+            max-height: 60vh;
+            overflow: hidden;
+            border: 2px solid var(--gold-500);
+            border-radius: 8px;
+            touch-action: none;
+        }
+        .crop-container img {
+            display: block;
+            max-width: 90vw;
+            max-height: 60vh;
+            user-select: none;
+            -webkit-user-drag: none;
+        }
+        .crop-overlay {
+            position: absolute;
+            border: 2px dashed var(--gold-400);
+            background: rgba(212,175,55,0.1);
+            cursor: move;
+            box-shadow: 0 0 0 9999px rgba(0,0,0,0.5);
+            border-radius: 4px;
+        }
+        .crop-controls {
+            margin-top: 16px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        .crop-btn {
+            padding: 10px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .crop-resize-handle {
+            position: absolute;
+            bottom: -4px;
+            right: -4px;
+            width: 28px;
+            height: 28px;
+            background: var(--gold-400);
+            border: 2px solid var(--bark-900);
+            border-radius: 50%;
+            cursor: nwse-resize;
+            z-index: 10;
+            touch-action: none;
+        }
         .pd-spouse-group {
             background: rgba(248, 246, 240, 0.03);
             border: 1px solid rgba(212, 175, 55, 0.15);
@@ -2109,7 +2178,7 @@
             </select>
             <button class="launch-btn" onclick="validateAndLaunch()">View Tree</button>
             <div class="launch-error" id="launchError">Invalid selection. Please try again.</div>
-            <div style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); color: var(--gold-300); font-size: 12px; opacity: 0.7;">v9.3.1</div>
+            <div style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); color: var(--gold-300); font-size: 12px; opacity: 0.7;">v9.5.1</div>
         </div>
     </div>
     
@@ -2579,6 +2648,50 @@
         
         debug('📊 Initial family data count:', familyData.length);
         
+        // Helper: get image URL from person's imageId or imageUrl
+        function getImageUrl(person) {
+            if (!person) return '';
+            // Cached data URL (from Firestore photo or upload)
+            if (person.imageUrl) return person.imageUrl;
+            // Firestore photo reference — needs async loading
+            if (person.imageId && person.imageId.startsWith('firestore_photo:')) {
+                // Trigger async load if not already loaded
+                loadFirestorePhoto(person);
+                return ''; // Will be populated after async load
+            }
+            // Firebase Storage reference (legacy)
+            if (person.imageId && person.imageId.startsWith('storage:')) {
+                return '';
+            }
+            // Google Drive ID
+            if (person.imageId) return `https://lh3.googleusercontent.com/d/${person.imageId}`;
+            return '';
+        }
+        
+        // Async loader for Firestore-stored photos
+        const _photoLoadPromises = {};
+        async function loadFirestorePhoto(person) {
+            if (!person || person.imageUrl) return; // Already loaded
+            const key = person.id;
+            if (_photoLoadPromises[key]) return; // Already loading
+            
+            _photoLoadPromises[key] = true;
+            try {
+                const { doc, getDoc } = window.firebaseModules;
+                const photoDoc = await getDoc(doc(window.firebaseDB, 'person_photos', `photo_${person.id}`));
+                if (photoDoc.exists()) {
+                    person.imageUrl = photoDoc.data().dataUrl;
+                    // Update any visible images for this person
+                    document.querySelectorAll(`[data-person-photo="${person.id}"]`).forEach(img => {
+                        img.src = person.imageUrl;
+                    });
+                }
+            } catch (e) {
+                debug('Photo load failed for', person.id, e);
+            }
+            delete _photoLoadPromises[key];
+        }
+        
         // Note: localStorage loading happens AFTER CSV file is checked in DOMContentLoaded
         // This ensures CSV file takes precedence
         
@@ -2979,7 +3092,7 @@
             _detailPersonId = person.id;
             _detailEditMode = !!startInEditMode;
             
-            const imgUrl = person.imageId ? `https://lh3.googleusercontent.com/d/${person.imageId}` : '';
+            const imgUrl = getImageUrl(person);
             const years = person.born || person.until ? 
                 `${person.born || '?'} - ${person.until || 'Present'}` : '';
             
@@ -3272,39 +3385,236 @@
         function handlePersonImageUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
-            processImageFile(file);
+            openCropModal(file);
         }
         
-        function processImageFile(file) {
-            if (!file.type.startsWith('image/')) {
-                alert('Please select an image file.');
-                return;
+        // ===== IMAGE CROP MODAL =====
+        let _cropDataUrl = null;  // Raw base64 data URL (never touches DOM constraints)
+        let _cropImg = null;      // DOM img for measuring display dimensions
+        let _cropBox = { x: 0, y: 0, size: 150 };
+        let _cropDragging = false;
+        let _cropResizing = false;
+        let _cropDragStart = { x: 0, y: 0 };
+        
+        function openCropModal(file) {
+            let modal = document.getElementById('cropModal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'cropModal';
+                modal.className = 'crop-modal';
+                document.body.appendChild(modal);
             }
+            
+            modal.innerHTML = `
+                <div style="color: var(--gold-300); font-size: 16px; font-weight: 600; margin-bottom: 12px;">Crop Photo</div>
+                <div class="crop-container" id="cropContainer">
+                    <img id="cropImage" src="">
+                    <div class="crop-overlay" id="cropOverlay">
+                        <div class="crop-resize-handle" id="cropResizeHandle"></div>
+                    </div>
+                </div>
+                <div style="color: var(--parchment); opacity: 0.6; font-size: 12px; margin-top: 8px;">Drag to move · Drag corner to resize</div>
+                <div class="crop-controls">
+                    <button class="crop-btn" onclick="closeCropModal()" style="background: var(--bark-700); color: var(--parchment); border: 1px solid rgba(212,175,55,0.3);">Cancel</button>
+                    <button class="crop-btn" onclick="applyCrop()" style="background: var(--gold-500); color: var(--bark-900);">Save Photo</button>
+                </div>
+            `;
             
             const reader = new FileReader();
             reader.onload = function(e) {
-                // Show preview in the image area
+                _cropDataUrl = e.target.result;
+                const img = document.getElementById('cropImage');
+                img.src = _cropDataUrl;
+                img.onload = function() {
+                    _cropImg = img;
+                    const minDim = Math.min(img.clientWidth, img.clientHeight);
+                    const size = Math.max(50, Math.min(minDim * 0.7, 200));
+                    _cropBox = {
+                        x: (img.clientWidth - size) / 2,
+                        y: (img.clientHeight - size) / 2,
+                        size: size
+                    };
+                    updateCropOverlay();
+                    setupCropInteractions();
+                };
+            };
+            reader.readAsDataURL(file);
+            modal.classList.add('active');
+        }
+        
+        function closeCropModal() {
+            const modal = document.getElementById('cropModal');
+            if (modal) modal.classList.remove('active');
+        }
+        
+        function updateCropOverlay() {
+            const overlay = document.getElementById('cropOverlay');
+            if (!overlay) return;
+            overlay.style.left = _cropBox.x + 'px';
+            overlay.style.top = _cropBox.y + 'px';
+            overlay.style.width = _cropBox.size + 'px';
+            overlay.style.height = _cropBox.size + 'px';
+        }
+        
+        function setupCropInteractions() {
+            const overlay = document.getElementById('cropOverlay');
+            const handle = document.getElementById('cropResizeHandle');
+            if (!overlay || !handle) return;
+            
+            // Clone to remove old listeners
+            const newOverlay = overlay.cloneNode(true);
+            overlay.parentNode.replaceChild(newOverlay, overlay);
+            const newHandle = newOverlay.querySelector('.crop-resize-handle');
+            
+            function startDrag(e) {
+                if (e.target === newHandle || e.target.className === 'crop-resize-handle') return;
+                _cropDragging = true; _cropResizing = false;
+                const t = e.touches ? e.touches[0] : e;
+                _cropDragStart = { x: t.clientX - _cropBox.x, y: t.clientY - _cropBox.y };
+                e.preventDefault();
+            }
+            function startResize(e) {
+                _cropResizing = true; _cropDragging = false;
+                const t = e.touches ? e.touches[0] : e;
+                _cropDragStart = { x: t.clientX, y: t.clientY, origSize: _cropBox.size };
+                e.preventDefault(); e.stopPropagation();
+            }
+            function onMove(e) {
+                if (!_cropImg) return;
+                const t = e.touches ? e.touches[0] : e;
+                if (_cropResizing) {
+                    const dx = t.clientX - _cropDragStart.x;
+                    const dy = t.clientY - _cropDragStart.y;
+                    const delta = Math.max(dx, dy);
+                    const maxW = _cropImg.clientWidth - _cropBox.x;
+                    const maxH = _cropImg.clientHeight - _cropBox.y;
+                    _cropBox.size = Math.max(40, Math.min(Math.min(maxW, maxH), _cropDragStart.origSize + delta));
+                    updateCropOverlay();
+                    e.preventDefault();
+                } else if (_cropDragging) {
+                    _cropBox.x = Math.max(0, Math.min(_cropImg.clientWidth - _cropBox.size, t.clientX - _cropDragStart.x));
+                    _cropBox.y = Math.max(0, Math.min(_cropImg.clientHeight - _cropBox.size, t.clientY - _cropDragStart.y));
+                    updateCropOverlay();
+                    e.preventDefault();
+                }
+            }
+            function onEnd() { _cropDragging = false; _cropResizing = false; }
+            
+            newOverlay.addEventListener('mousedown', startDrag);
+            newOverlay.addEventListener('touchstart', startDrag, { passive: false });
+            newHandle.addEventListener('mousedown', startResize);
+            newHandle.addEventListener('touchstart', startResize, { passive: false });
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('touchmove', onMove, { passive: false });
+            document.addEventListener('mouseup', onEnd);
+            document.addEventListener('touchend', onEnd);
+        }
+        
+        async function applyCrop() {
+            if (!_cropDataUrl || !_cropImg || !_detailPersonId) return;
+            
+            try {
+                // Create a FRESH Image object from the raw data URL
+                // This avoids any DOM/CSS/display issues that cause black canvas
+                const srcImg = new Image();
+                const imgLoaded = new Promise((resolve, reject) => {
+                    srcImg.onload = resolve;
+                    srcImg.onerror = () => reject(new Error('Could not load image for cropping'));
+                });
+                srcImg.src = _cropDataUrl;
+                await imgLoaded;
+                
+                // Map crop box (in display coords) to source image coords
+                const scaleX = srcImg.naturalWidth / _cropImg.clientWidth;
+                const scaleY = srcImg.naturalHeight / _cropImg.clientHeight;
+                const sx = Math.round(_cropBox.x * scaleX);
+                const sy = Math.round(_cropBox.y * scaleY);
+                const sw = Math.round(_cropBox.size * scaleX);
+                const sh = Math.round(_cropBox.size * scaleY);
+                
+                // Crop to 400x400 JPEG
+                const canvas = document.createElement('canvas');
+                canvas.width = 400; canvas.height = 400;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(srcImg, sx, sy, sw, sh, 0, 0, 400, 400);
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+                
+                if (dataUrl.length < 2000) {
+                    throw new Error('Crop produced a blank image — please try again.');
+                }
+                
+                closeCropModal();
+                _cropDataUrl = null;
+                showUploadStatus('Saving photo...');
+                
+                const personId = _detailPersonId;
+                const person = personMap[personId];
+                if (!person) return;
+                
+                const oldData = { ...person };
+                
+                const { doc, setDoc } = window.firebaseModules;
+                await setDoc(doc(window.firebaseDB, 'person_photos', `photo_${personId}`), {
+                    personId: personId,
+                    dataUrl: dataUrl,
+                    updatedAt: new Date().toISOString(),
+                    uploadedBy: currentUser ? currentUser.email : 'unknown'
+                });
+                
+                person.imageId = `firestore_photo:${personId}`;
+                person.imageUrl = dataUrl;
+                
+                await savePersonToFirebase(person);
+                // Log change but exclude imageUrl from newData (base64 is too large for log)
+                const logNewData = { ...person }; delete logNewData.imageUrl;
+                const logOldData = { ...oldData }; delete logOldData.imageUrl;
+                await logChange('edit', personId, logOldData, logNewData, `Uploaded photo for ${person.name}`);
+                
+                showUploadStatus('Photo saved!');
+                
+                // Update preview
                 const imgArea = document.querySelector('.pd-image-area');
                 if (imgArea) {
                     let img = imgArea.querySelector('img');
-                    if (!img) {
-                        img = document.createElement('img');
-                        imgArea.insertBefore(img, imgArea.firstChild);
-                    }
-                    img.src = e.target.result;
-                    // Hide the + placeholder
-                    const placeholder = imgArea.querySelector('div:not(.pd-image-overlay)');
-                    if (placeholder && placeholder.textContent === '+') placeholder.style.display = 'none';
+                    if (!img) { img = document.createElement('img'); imgArea.insertBefore(img, imgArea.firstChild); }
+                    img.src = dataUrl;
+                    const ph = imgArea.querySelector('div:not(.pd-image-overlay)');
+                    if (ph && ph.textContent === '+') ph.style.display = 'none';
                 }
+                const idField = document.getElementById('pdEditImageId');
+                if (idField) idField.value = person.imageId;
                 
-                alert('Image preview loaded.\n\nTo save permanently:\n1. Upload this image to Google Drive\n2. Right-click the file → Share → "Anyone with link"\n3. Copy the file ID from the URL\n   (the long string between /d/ and /view)\n4. Paste the ID in the "Drive ID" field');
-            };
-            reader.readAsDataURL(file);
+            } catch (error) {
+                closeCropModal();
+                _cropDataUrl = null;
+                console.error('Photo save error:', error);
+                showUploadStatus('Save failed: ' + (error.message || 'Unknown error'), true);
+            }
+        }
+        
+        function showUploadStatus(message, isError) {
+            const modal = document.getElementById('personDetailModal');
+            if (!modal) return;
+            
+            let statusEl = modal.querySelector('.pd-upload-status');
+            if (!statusEl) {
+                statusEl = document.createElement('div');
+                statusEl.className = 'pd-upload-status';
+                statusEl.style.cssText = 'padding: 8px 16px; text-align: center; font-size: 13px; font-weight: 600;';
+                const header = modal.querySelector('.person-detail-header');
+                if (header) header.parentNode.insertBefore(statusEl, header.nextSibling);
+            }
+            
+            statusEl.style.color = isError ? '#e74c3c' : 'var(--sage-400)';
+            statusEl.textContent = message;
+            
+            if (!isError) {
+                setTimeout(() => { if (statusEl.textContent === message) statusEl.textContent = ''; }, 3000);
+            }
         }
         
         // Enable paste from clipboard (phone: copy image from Photos, then paste here)
         document.addEventListener('paste', function(e) {
-            // Only handle paste when person detail edit mode is open
             const modal = document.getElementById('personDetailModal');
             if (!modal || modal.style.display === 'none') return;
             if (!_detailEditMode) return;
@@ -3316,7 +3626,7 @@
                 if (item.type.startsWith('image/')) {
                     e.preventDefault();
                     const file = item.getAsFile();
-                    if (file) processImageFile(file);
+                    if (file) openCropModal(file);
                     return;
                 }
             }
@@ -3603,7 +3913,7 @@
         // Collapsed family card for memory optimization
         function renderCollapsedFamilyCard(rootPerson, descendantCount) {
             const spouse = rootPerson.spouseId ? personMap[rootPerson.spouseId] : null;
-            const imgUrl = rootPerson.imageId ? `https://lh3.googleusercontent.com/d/${rootPerson.imageId}` : '';
+            const imgUrl = getImageUrl(rootPerson);
             
             const names = spouse ? `${rootPerson.name} & ${spouse.name}` : rootPerson.name;
             const dates = rootPerson.born || rootPerson.until ? 
@@ -3648,57 +3958,94 @@
         // Mobile vertical tree renderer - with depth limit for memory safety
         function renderMobileTree(rootPerson, maxRenderDepth) {
             // Default depth limit: prevents runaway recursion on iPhone
-            // Mode 80 passes its own limit; individual trees get generous depth
             if (maxRenderDepth === undefined) maxRenderDepth = 12;
             
-            const parts = []; // Use array for HTML assembly (faster than string concat)
+            const parts = [];
             
             function renderPersonMobile(person, generation) {
                 if (!person || generation > maxRenderDepth) return;
                 
-                const spouse = person.spouseId ? personMap[person.spouseId] : null;
+                // Get ALL children of this person (from all partners)
+                const allMyChildren = getChildren(person.id);
                 
-                const cardHtml = renderPersonCard(person, generation);
-                const spouseCardHtml = spouse ? renderPersonCard(spouse, generation) : '';
+                // Find all unique partners (other parent of each child)
+                const partnerGroups = groupChildrenByPartner(person, allMyChildren);
                 
-                if (spouse) {
-                    parts.push(`<div class="tree-node" data-generation="${generation}">
-                        <div class="fold-toggle expanded" data-person-id="${person.id}" onclick="toggleFold('fold-${person.id}', event)"></div>
-                        <div class="spouse-pair">
-                            ${cardHtml}
-                            ${spouseCardHtml}
-                        </div>
-                    </div>`);
-                } else {
-                    parts.push(`<div class="tree-node" data-generation="${generation}">
-                        <div class="fold-toggle expanded" data-person-id="${person.id}" onclick="toggleFold('fold-${person.id}', event)"></div>
-                        <div class="single-person">${cardHtml}</div>
-                    </div>`);
-                }
+                // Also get the explicit spouse (may have no children)
+                const explicitSpouse = person.spouseId ? personMap[person.spouseId] : null;
                 
-                // Get children from BOTH person AND spouse (children may be indexed under either parent)
-                const personChildren = getChildren(person.id);
-                const spouseChildren = spouse ? getChildren(spouse.id) : [];
-                
-                // Merge and deduplicate
-                const childSet = new Set(personChildren.map(c => c.id));
-                const children = [...personChildren];
-                for (const sc of spouseChildren) {
-                    if (!childSet.has(sc.id)) {
-                        children.push(sc);
-                        childSet.add(sc.id);
-                    }
-                }
-                
-                if (children.length > 0 && generation < maxRenderDepth) {
-                    // Sort children by ID (ascending order) - sort in place to avoid new array
-                    if (children.length > 1) children.sort((a, b) => a.id - b.id);
+                // If there's only one partner group (or none), render normally
+                if (partnerGroups.length <= 1) {
+                    const spouse = explicitSpouse;
+                    const cardHtml = renderPersonCard(person, generation);
+                    const spouseCardHtml = spouse ? renderPersonCard(spouse, generation) : '';
                     
-                    parts.push(`<div class="children-container expanded" id="fold-${person.id}">`);
-                    for (let i = 0; i < children.length; i++) {
-                        renderPersonMobile(children[i], generation + 1);
+                    if (spouse) {
+                        parts.push(`<div class="tree-node" data-generation="${generation}">
+                            <div class="fold-toggle expanded" data-person-id="${person.id}" onclick="toggleFold('fold-${person.id}', event)"></div>
+                            <div class="spouse-pair">
+                                ${cardHtml}
+                                ${spouseCardHtml}
+                            </div>
+                        </div>`);
+                    } else {
+                        parts.push(`<div class="tree-node" data-generation="${generation}">
+                            <div class="fold-toggle expanded" data-person-id="${person.id}" onclick="toggleFold('fold-${person.id}', event)"></div>
+                            <div class="single-person">${cardHtml}</div>
+                        </div>`);
                     }
-                    parts.push('</div>');
+                    
+                    // Merge children from person and spouse
+                    const spouseChildren = spouse ? getChildren(spouse.id) : [];
+                    const childSet = new Set(allMyChildren.map(c => c.id));
+                    const children = [...allMyChildren];
+                    for (const sc of spouseChildren) {
+                        if (!childSet.has(sc.id)) { children.push(sc); childSet.add(sc.id); }
+                    }
+                    
+                    if (children.length > 0 && generation < maxRenderDepth) {
+                        if (children.length > 1) children.sort((a, b) => a.id - b.id);
+                        parts.push(`<div class="children-container expanded" id="fold-${person.id}">`);
+                        for (const child of children) {
+                            renderPersonMobile(child, generation + 1);
+                        }
+                        parts.push('</div>');
+                    }
+                } else {
+                    // MULTIPLE SPOUSES: render each spouse+children group as a separate family unit
+                    for (let gi = 0; gi < partnerGroups.length; gi++) {
+                        const group = partnerGroups[gi];
+                        const partner = group.partnerId ? personMap[group.partnerId] : null;
+                        const foldId = `fold-${person.id}-s${gi}`;
+                        
+                        const cardHtml = renderPersonCard(person, generation);
+                        const partnerCardHtml = partner ? renderPersonCard(partner, generation) : '';
+                        
+                        if (partner) {
+                            parts.push(`<div class="tree-node" data-generation="${generation}">
+                                <div class="fold-toggle expanded" data-person-id="${person.id}-s${gi}" onclick="toggleFold('${foldId}', event)"></div>
+                                <div class="spouse-pair">
+                                    ${cardHtml}
+                                    ${partnerCardHtml}
+                                </div>
+                            </div>`);
+                        } else {
+                            parts.push(`<div class="tree-node" data-generation="${generation}">
+                                <div class="fold-toggle expanded" data-person-id="${person.id}-s${gi}" onclick="toggleFold('${foldId}', event)"></div>
+                                <div class="single-person">${cardHtml}</div>
+                            </div>`);
+                        }
+                        
+                        // Render this group's children
+                        const groupChildren = group.children.sort((a, b) => a.id - b.id);
+                        if (groupChildren.length > 0 && generation < maxRenderDepth) {
+                            parts.push(`<div class="children-container expanded" id="${foldId}">`);
+                            for (const child of groupChildren) {
+                                renderPersonMobile(child, generation + 1);
+                            }
+                            parts.push('</div>');
+                        }
+                    }
                 }
             }
             
@@ -3706,14 +4053,13 @@
                 const selected = selectedPerson && selectedPerson.id === person.id;
                 const highlightClass = relationshipPath.has(person.id) ? 'highlighted' : '';
                 
-                // Lazy-load images: use loading="lazy" to defer off-screen images
-                const imgUrl = person.imageId ? `https://lh3.googleusercontent.com/d/${person.imageId}` : '';
+                const imgUrl = getImageUrl(person);
                 const cardDates = person.born || person.until ? 
                     `${person.born || '?'} - ${person.until || ''}` : '';
                 
                 return `<div class="node-card ${person.sex.toLowerCase()} ${selected ? 'selected' : ''} ${highlightClass} has-parent-line" 
                              onclick="selectPerson(${person.id})" data-generation="${generation}">
-                    ${imgUrl ? `<img src="${imgUrl}" alt="${person.name}" class="node-image" loading="lazy" onerror="this.style.display='none'">` : ''}
+                    ${imgUrl ? `<img src="${imgUrl}" alt="${person.name}" class="node-image" loading="lazy" data-person-photo="${person.id}" onerror="this.style.display='none'">` : ''}
                     <div class="node-content">
                         <div class="node-name" title="${person.name}">${person.name}</div>
                         ${cardDates ? `<div class="node-dates">${cardDates}</div>` : ''}
@@ -3723,6 +4069,36 @@
             
             renderPersonMobile(rootPerson, 0);
             return parts.join('');
+        }
+        
+        // Group children of a person by their other parent (for multi-spouse rendering)
+        function groupChildrenByPartner(person, children) {
+            if (!children || children.length === 0) return [];
+            
+            const isMale = person.sex === 'Male';
+            const groups = new Map(); // partnerId -> { partnerId, children }
+            
+            for (const child of children) {
+                // Determine the other parent
+                let partnerId;
+                if (isMale) {
+                    partnerId = child.motherId || 0; // 0 = unknown partner
+                } else {
+                    partnerId = child.fatherId || 0;
+                }
+                
+                if (!groups.has(partnerId)) {
+                    groups.set(partnerId, { partnerId: partnerId || null, children: [] });
+                }
+                groups.get(partnerId).children.push(child);
+            }
+            
+            // Convert to array sorted by first child ID (chronological order)
+            return [...groups.values()].sort((a, b) => {
+                const aMin = Math.min(...a.children.map(c => c.id));
+                const bMin = Math.min(...b.children.map(c => c.id));
+                return aMin - bMin;
+            });
         }
         
         // Special rendering function for mode "80"
@@ -3911,7 +4287,7 @@
             }
             
             const personCard = (p, selected, highlight) => {
-                const imgUrl = p.imageId ? `https://lh3.googleusercontent.com/d/${p.imageId}` : '';
+                const imgUrl = getImageUrl(p);
                 let cardDates = '';
                 if (p.born) cardDates += p.born;
                 if (p.until) cardDates += ` - ${p.until}`;
@@ -3968,7 +4344,7 @@
 return `
                     <div class="node-card ${p.sex.toLowerCase()} ${selected ? 'selected' : ''} ${highlightClass}" onclick="selectPerson(${p.id})">
                         ${buttonsHtml}
-                        ${imgUrl ? `<img src="${imgUrl}" alt="${p.name}" class="node-image" loading="lazy" onerror="this.style.display='none'">` : ''}
+                        ${imgUrl ? `<img src="${imgUrl}" alt="${p.name}" class="node-image" loading="lazy" data-person-photo="${p.id}" onerror="this.style.display='none'">` : ''}
                         <div class="node-name" title="${p.name}">${p.name}</div>
                         ${cardDates ? `<div class="node-dates">${cardDates}</div>` : ''}
                         <div class="node-badges">
@@ -4826,8 +5202,8 @@ return `
                 }
                 
                 // Add image/photo if available (GEDCOM 5.5.1 OBJE tag)
-                if (person.imageId) {
-                    const imageUrl = `https://lh3.googleusercontent.com/d/${person.imageId}`;
+                if (person.imageId || person.imageUrl) {
+                    const imageUrl = getImageUrl(person);
                     gedcom += `1 OBJE\n`;
                     gedcom += `2 FILE ${imageUrl}\n`;
                     gedcom += `2 FORM URL\n`;
@@ -5748,7 +6124,7 @@ return `
                 }
             }
         } catch (error) {
-            console.error('Error loading user role:', error);
+            console.warn('Could not load user role from Firestore (check rules for authorized_users collection):', error.message || error);
             // Fallback for bootstrap
             if (email.toLowerCase() === 'venki.ayalur@gmail.com') {
                 userRole = 'superadmin';
@@ -5880,23 +6256,40 @@ return `
         return clean;
     }
     
+    // Deep sanitize: recursively remove undefined values from nested objects
+    function deepSanitize(obj) {
+        if (obj === null || obj === undefined) return null;
+        if (typeof obj !== 'object') return obj;
+        if (Array.isArray(obj)) return obj.map(deepSanitize);
+        const clean = {};
+        for (const [key, val] of Object.entries(obj)) {
+            if (val !== undefined) {
+                clean[key] = (val !== null && typeof val === 'object' && !(val instanceof Date)) 
+                    ? deepSanitize(val) 
+                    : val;
+            }
+        }
+        return clean;
+    }
+    
     async function logChange(action, personId, oldData, newData, description) {
         try {
             const { collection, addDoc, serverTimestamp } = window.firebaseModules;
-            // Don't sanitize the top-level doc — serverTimestamp() sentinel must not be copied
-            // Only sanitize nested oldData/newData which may contain undefined fields
-            await addDoc(collection(window.firebaseDB, 'change_log'), {
-                action: action,
+            const logDoc = {
+                action: action || 'unknown',
                 personId: personId || null,
-                oldData: oldData ? sanitizeForFirestore(oldData) : null,
-                newData: newData ? sanitizeForFirestore(newData) : null,
+                oldData: oldData ? deepSanitize(oldData) : null,
+                newData: newData ? deepSanitize(newData) : null,
                 description: description || '',
                 userEmail: currentUser ? currentUser.email : 'unknown',
                 userRole: userRole || 'unknown',
                 timestamp: serverTimestamp()
-            });
+            };
+            await addDoc(collection(window.firebaseDB, 'change_log'), logDoc);
+            debug('✅ Change logged:', action, description);
         } catch (error) {
-            console.error('Error logging change:', error);
+            // Log error visibly — this is a critical system, errors should not be silent
+            console.error('❌ Error logging change:', error, 'Action:', action, 'Description:', description);
         }
     }
     
@@ -5920,12 +6313,8 @@ return `
                 });
                 if (logs.length > 0) return logs;
             } catch (indexError) {
-                // orderBy query failed - likely missing Firestore index
-                // Firestore error includes a URL to create the index
                 const errMsg = indexError.message || '';
-                if (errMsg.includes('index')) {
-                    console.warn('Firestore index needed for change_log. Falling back to unordered query. Create the index at:', errMsg.match(/https:\/\/[^\s]*/)?.[0] || 'Firebase Console > Firestore > Indexes');
-                }
+                console.warn('Ordered query failed, trying fallback. Error:', errMsg);
             }
             
             // Fallback: get all docs without ordering (no index required)
@@ -5945,7 +6334,8 @@ return `
             return logs.slice(0, limitCount || 50);
         } catch (error) {
             console.error('Error loading change log:', error);
-            return [];
+            // Return the error so UI can display it
+            return { error: error.message || error.code || 'Unknown error reading change_log' };
         }
     }
     
@@ -5960,7 +6350,22 @@ return `
                 // Restore the old data
                 const person = personMap[logEntry.personId];
                 if (person) {
+                    const currentImageId = person.imageId;
                     Object.assign(person, logEntry.oldData);
+                    
+                    // If imageId changed, clear the cached imageUrl
+                    if (person.imageId !== currentImageId) {
+                        delete person.imageUrl;
+                    }
+                    // If rolling back FROM a firestore photo, delete the photo doc
+                    if (currentImageId && currentImageId.startsWith('firestore_photo:') && 
+                        (!person.imageId || !person.imageId.startsWith('firestore_photo:'))) {
+                        try {
+                            const { doc, deleteDoc } = window.firebaseModules;
+                            await deleteDoc(doc(window.firebaseDB, 'person_photos', `photo_${logEntry.personId}`));
+                        } catch(e) { /* photo doc may not exist */ }
+                    }
+                    
                     rebuildIndexes();
                     calculateAllGenerations();
                     await savePersonToFirebase(person);
@@ -6015,7 +6420,7 @@ return `
         try {
             const { doc, setDoc } = window.firebaseModules;
             const personRef = doc(window.firebaseDB, 'people', `person_${person.id}`);
-            await setDoc(personRef, sanitizeForFirestore(person));
+            await setDoc(personRef, deepSanitize(person));
         } catch (error) {
             console.error('Error saving person to Firebase:', error);
             throw error;
@@ -6292,10 +6697,29 @@ return `
         const container = document.getElementById('adminChangelogList');
         container.innerHTML = '<div style="color: var(--gold-300); padding: 20px; text-align: center;">Loading change history...</div>';
         
-        const logs = await getChangeLog(50);
+        const result = await getChangeLog(50);
+        
+        // Handle error from getChangeLog
+        if (result && result.error) {
+            container.innerHTML = `<div style="color: var(--parchment); padding: 20px; text-align: center;">
+                <div style="margin-bottom: 10px; color: #e74c3c; font-weight: 600;">Could not load change log</div>
+                <div style="opacity: 0.7; font-size: 12px; margin-bottom: 15px;">${result.error}</div>
+                <div style="opacity: 0.6; font-size: 11px; text-align: left; background: rgba(0,0,0,0.2); padding: 12px; border-radius: 6px;">
+                    <strong>Firestore rules needed:</strong><br>
+                    In Firebase Console → Firestore → Rules, ensure the change_log collection allows read/write for authenticated users:<br><br>
+                    <code style="font-size: 10px;">match /change_log/{doc} {<br>&nbsp;&nbsp;allow read, write: if request.auth != null;<br>}</code>
+                </div>
+            </div>`;
+            return;
+        }
+        
+        const logs = Array.isArray(result) ? result : [];
         
         if (logs.length === 0) {
-            container.innerHTML = '<div style="color: var(--parchment); padding: 20px; text-align: center; opacity: 0.7;">No changes recorded yet.</div>';
+            container.innerHTML = `<div style="color: var(--parchment); padding: 20px; text-align: center;">
+                <div style="opacity: 0.7; margin-bottom: 10px;">No changes recorded yet.</div>
+                <div style="opacity: 0.5; font-size: 11px;">Changes are logged when you add, edit, or delete people. If you have been making changes and nothing appears here, check the browser console for errors and ensure Firestore security rules allow writing to the change_log collection.</div>
+            </div>`;
             return;
         }
         
