@@ -2174,11 +2174,10 @@
                 <option value="ayalur">Ayalur</option>
                 <option value="avr">AVR</option>
                 <option value="radha">Radha</option>
-                <option value="all">All</option>
             </select>
             <button class="launch-btn" onclick="validateAndLaunch()">View Tree</button>
             <div class="launch-error" id="launchError">Invalid selection. Please try again.</div>
-            <div style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); color: var(--gold-300); font-size: 12px; opacity: 0.7;">v9.5.1</div>
+            <div style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); color: var(--gold-300); font-size: 12px; opacity: 0.7;">v9.7.1</div>
         </div>
     </div>
     
@@ -2217,7 +2216,6 @@
                     Admin Panel
                 </button>
                 
-                <button class="control-btn" onclick="switchView(); closeMobileSidebarIfNeeded();">Switch Tree View</button>
                 <button class="control-btn" onclick="openDataManager(); closeMobileSidebarIfNeeded();" id="dataManagerBtn">Data Manager</button>
                 <button class="control-btn" onclick="openThemeSelector(); closeMobileSidebarIfNeeded();" id="themeBtn">Theme Selector</button>
             </div>
@@ -2239,7 +2237,6 @@
                     <option value="ayalur">Ayalur</option>
                     <option value="avr">AVR</option>
                     <option value="radha">Radha</option>
-                    <option value="all">All</option>
                 </select>
             </div>
             
@@ -3106,10 +3103,12 @@
             for (const sc of spouseChildren) { if (!childSet.has(sc.id)) { allChildren.push(sc); childSet.add(sc.id); } }
             const siblings = getSiblings(person);
             
-            const isEditMode = _detailEditMode && canEdit();
-            const editBtnStyle = canEdit() ? '' : 'display:none;';
+            const isViewer = currentUser && userRole === 'viewer';
+            const isEditor = canEdit(); // editor, admin, superadmin
+            const isEditMode = _detailEditMode && (isEditor || isViewer);
+            const isViewerEdit = isEditMode && isViewer && !isEditor;
             
-            // Build image area
+            // Build image area — viewers can also change photos
             let imageHtml;
             if (isEditMode) {
                 imageHtml = `<div class="pd-image-area" onclick="document.getElementById('pdImageUpload').click()">
@@ -3124,39 +3123,60 @@
             // Header section
             let headerHtml;
             if (isEditMode) {
-                headerHtml = `
-                    <div class="pd-field-row" style="margin-bottom:0">
-                        <input type="text" class="person-detail-edit-input" id="pdEditName" value="${person.name}" style="font-size:20px; font-weight:600; color:var(--gold-300);">
-                    </div>
-                    <div class="pd-field-row" style="margin-top:8px">
-                        <select class="person-detail-edit-input" id="pdEditSex" style="width:auto; min-width:90px;">
-                            <option value="Male" ${person.sex === 'Male' ? 'selected' : ''}>Male</option>
-                            <option value="Female" ${person.sex === 'Female' ? 'selected' : ''}>Female</option>
-                        </select>
-                        <input type="text" class="person-detail-edit-input" id="pdEditBorn" value="${person.born || ''}" placeholder="Born" style="width:80px;">
-                        <span style="color:var(--parchment);">–</span>
-                        <input type="text" class="person-detail-edit-input" id="pdEditUntil" value="${person.until || ''}" placeholder="Died" style="width:80px;">
-                    </div>`;
+                if (isViewerEdit) {
+                    // Viewer edit: can only change name
+                    headerHtml = `
+                        <div class="pd-field-row" style="margin-bottom:0">
+                            <input type="text" class="person-detail-edit-input" id="pdEditName" value="${person.name}" style="font-size:20px; font-weight:600; color:var(--gold-300);">
+                        </div>
+                        <div class="person-detail-meta" style="margin-top:8px;">
+                            ${years ? `<div class="person-detail-years">${years}</div>` : ''}
+                            <div class="person-detail-gender">${person.sex}</div>
+                        </div>`;
+                } else {
+                    // Full editor
+                    headerHtml = `
+                        <div class="pd-field-row" style="margin-bottom:0">
+                            <input type="text" class="person-detail-edit-input" id="pdEditName" value="${person.name}" style="font-size:20px; font-weight:600; color:var(--gold-300);">
+                        </div>
+                        <div class="pd-field-row" style="margin-top:8px">
+                            <select class="person-detail-edit-input" id="pdEditSex" style="width:auto; min-width:90px;">
+                                <option value="Male" ${person.sex === 'Male' ? 'selected' : ''}>Male</option>
+                                <option value="Female" ${person.sex === 'Female' ? 'selected' : ''}>Female</option>
+                            </select>
+                            <input type="text" class="person-detail-edit-input" id="pdEditBorn" value="${person.born || ''}" placeholder="Born" style="width:80px;">
+                            <span style="color:var(--parchment);">–</span>
+                            <input type="text" class="person-detail-edit-input" id="pdEditUntil" value="${person.until || ''}" placeholder="Died" style="width:80px;">
+                        </div>`;
+                }
             } else {
+                // View mode — buttons depend on auth state
+                let actionBtns = '';
+                actionBtns += `<button class="person-detail-view-btn" onclick="event.stopPropagation(); viewTreeFromPerson(${person.id})">View Tree</button>`;
+                
+                if (isEditor || isViewer) {
+                    actionBtns += `<button class="person-detail-view-btn" onclick="event.stopPropagation(); showPersonDetail(personMap[${person.id}], true)" style="background: linear-gradient(135deg, var(--sage-500), #5a8a7b);">Edit</button>`;
+                } else if (!currentUser) {
+                    actionBtns += `<button class="person-detail-view-btn" onclick="event.stopPropagation(); openAuthModal();" style="background: linear-gradient(135deg, var(--gold-500), #c9a84c);">Sign in to edit</button>`;
+                }
+                
                 headerHtml = `
                     <h2>${person.name}</h2>
                     <div class="person-detail-meta">
                         ${years ? `<div class="person-detail-years">${years}</div>` : ''}
                         <div class="person-detail-gender">${person.sex}</div>
-                        <button class="person-detail-view-btn" onclick="event.stopPropagation(); viewTreeFromPerson(${person.id})">View Tree</button>
-                        <button class="person-detail-view-btn" onclick="event.stopPropagation(); showPersonDetail(personMap[${person.id}], true)" style="background: linear-gradient(135deg, var(--sage-500), #5a8a7b); ${editBtnStyle}">Edit</button>
+                        ${actionBtns}
                     </div>`;
             }
-            
             let bodyHtml = '';
             
             const addBtnHtml = (onclick) => canEdit() ? `<button class="pd-add-btn" onclick="event.stopPropagation(); ${onclick}">+ Add</button>` : '';
             
             // Parents section
-            const parentHeader = isEditMode ? `<div class="pd-section-header"><h3>Parents</h3></div>` : '<h3>Parents</h3>';
-            if (father || mother || isEditMode) {
+            const parentHeader = (isEditMode && !isViewerEdit) ? `<div class="pd-section-header"><h3>Parents</h3></div>` : '<h3>Parents</h3>';
+            if (father || mother || (isEditMode && !isViewerEdit)) {
                 bodyHtml += `<div class="person-detail-section">${parentHeader}<div class="person-detail-list">`;
-                if (isEditMode) {
+                if (isEditMode && !isViewerEdit) {
                     const fatherOpts = buildPersonSelect('pdEditFather', person.fatherId, 'Male', !canChangeLinks());
                     const motherOpts = buildPersonSelect('pdEditMother', person.motherId, 'Female', !canChangeLinks());
                     bodyHtml += `<div class="pd-field-row"><span class="pd-field-label">Father</span>${fatherOpts}</div>`;
@@ -3169,12 +3189,12 @@
             }
             
             // Spouse section with marriage dates and children grouped by spouse
-            if (spouse || isEditMode || canEdit()) {
-                const spouseHeader = isEditMode 
+            if (spouse || (isEditMode && !isViewerEdit) || canEdit()) {
+                const spouseHeader = (isEditMode && !isViewerEdit)
                     ? `<div class="pd-section-header"><h3>Spouse & Children</h3></div>`
                     : `<div class="pd-section-header"><h3>Spouse & Children</h3>${!spouse ? addBtnHtml(`addRelativeFromDetail(${person.id}, 'spouse')`) : ''}</div>`;
                 bodyHtml += `<div class="person-detail-section">${spouseHeader}`;
-                if (isEditMode) {
+                if (isEditMode && !isViewerEdit) {
                     const spouseOpts = buildPersonSelect('pdEditSpouse', person.spouseId, null, !canChangeLinks());
                     bodyHtml += `<div class="pd-field-row"><span class="pd-field-label">Spouse</span>${spouseOpts}</div>`;
                     bodyHtml += `<div class="pd-field-row"><span class="pd-field-label">Married</span><input type="text" class="person-detail-edit-input" id="pdEditMarriageDate" value="${person.marriageDate || ''}" placeholder="Year" style="width:80px;"></div>`;
@@ -3236,28 +3256,75 @@
                 }
             }
             
-            // Image ID field in edit mode
-            let imageIdHtml = '';
+            // Notes section (view and edit)
+            let notesHtml = '';
             if (isEditMode) {
+                notesHtml = `<div class="person-detail-section"><h3>Notes</h3>
+                    <textarea class="person-detail-edit-input" id="pdEditNotes" rows="3" placeholder="Add notes about this person..." style="width:100%; resize:vertical; min-height:60px;">${person.notes || ''}</textarea>
+                </div>`;
+            } else if (person.notes) {
+                notesHtml = `<div class="person-detail-section"><h3>Notes</h3>
+                    <div style="color: var(--parchment); opacity: 0.8; font-size: 13px; line-height: 1.5; white-space: pre-wrap;">${person.notes}</div>
+                </div>`;
+            }
+            
+            // Details section (view mode only — show all available fields)
+            let detailsHtml = '';
+            if (!isEditMode) {
+                const detailItems = [];
+                if (person.id) detailItems.push(['ID', person.id]);
+                if (person.sex) detailItems.push(['Gender', person.sex]);
+                if (person.born) detailItems.push(['Born', person.born]);
+                if (person.until) detailItems.push(['Passed', person.until]);
+                if (person.marriageDate) detailItems.push(['Married', person.marriageDate]);
+                if (person.separationDate) detailItems.push(['Separated', person.separationDate]);
+                if (person.imageId) detailItems.push(['Photo', person.imageId.startsWith('firestore_photo:') ? 'Uploaded' : person.imageId.startsWith('storage:') ? 'Storage' : 'Drive']);
+                
+                if (detailItems.length > 0) {
+                    detailsHtml = `<div class="person-detail-section"><h3>Details</h3>
+                        <div style="display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 12px;">
+                            ${detailItems.map(([label, val]) => `<span style="color: var(--parchment); opacity: 0.5;">${label}</span><span style="color: var(--parchment); opacity: 0.8;">${val}</span>`).join('')}
+                        </div>
+                    </div>`;
+                }
+            }
+            
+            // Image ID field in edit mode (not for viewers — they just use the photo tap)
+            let imageIdHtml = '';
+            if (isEditMode && !isViewerEdit) {
                 imageIdHtml = `<div class="person-detail-section"><h3>Image</h3>
                     <div class="pd-field-row"><span class="pd-field-label">Drive ID</span>
                         <input type="text" class="person-detail-edit-input" id="pdEditImageId" value="${person.imageId || ''}" placeholder="Google Drive file ID">
                     </div>
                     <div style="color:var(--parchment); opacity:0.5; font-size:11px; margin-top:4px;">
-                        Tap photo to upload from camera/gallery. You can also copy an image and paste it here (Ctrl+V / long-press paste).
+                        Tap photo to upload from camera/gallery.
                     </div>
                 </div>`;
+            } else if (isViewerEdit) {
+                // Hidden field to preserve imageId on save
+                imageIdHtml = `<input type="hidden" id="pdEditImageId" value="${person.imageId || ''}">`;
             }
             
             // Save bar in edit mode
             let saveBarHtml = '';
             if (isEditMode) {
-                const deleteBtnHtml = canDelete() ? `<button class="pd-save-btn" onclick="deletePersonFromDetail(${person.id})" style="background: rgba(231,76,60,0.8); color: white;">Delete</button>` : '';
-                saveBarHtml = `<div class="pd-save-bar">
-                    ${deleteBtnHtml}
-                    <button class="pd-save-btn" onclick="showPersonDetail(personMap[${person.id}])" style="background: var(--bark-700); color: var(--parchment); border: 1px solid rgba(212,175,55,0.3);">Cancel</button>
-                    <button class="pd-save-btn" onclick="savePersonFromDetail(${person.id})" style="background: var(--gold-500); color: var(--bark-900);">Save</button>
-                </div>`;
+                if (isViewerEdit) {
+                    // Viewer: Save (limited fields) + Request Editor Access
+                    saveBarHtml = `<div class="pd-save-bar" style="flex-direction: column; gap: 8px;">
+                        <div style="display: flex; gap: 8px; width: 100%;">
+                            <button class="pd-save-btn" onclick="showPersonDetail(personMap[${person.id}])" style="background: var(--bark-700); color: var(--parchment); border: 1px solid rgba(212,175,55,0.3); flex:1;">Cancel</button>
+                            <button class="pd-save-btn" onclick="savePersonFromDetail(${person.id})" style="background: var(--gold-500); color: var(--bark-900); flex:1;">Save</button>
+                        </div>
+                        <button class="pd-save-btn" onclick="requestEditorAccess()" style="background: transparent; color: var(--gold-400); border: 1px solid var(--gold-500); width: 100%; font-size: 12px;">Request full editing permissions</button>
+                    </div>`;
+                } else {
+                    const deleteBtnHtml = canDelete() ? `<button class="pd-save-btn" onclick="deletePersonFromDetail(${person.id})" style="background: rgba(231,76,60,0.8); color: white;">Delete</button>` : '';
+                    saveBarHtml = `<div class="pd-save-bar">
+                        ${deleteBtnHtml}
+                        <button class="pd-save-btn" onclick="showPersonDetail(personMap[${person.id}])" style="background: var(--bark-700); color: var(--parchment); border: 1px solid rgba(212,175,55,0.3);">Cancel</button>
+                        <button class="pd-save-btn" onclick="savePersonFromDetail(${person.id})" style="background: var(--gold-500); color: var(--bark-900);">Save</button>
+                    </div>`;
+                }
             }
             
             const html = `
@@ -3269,6 +3336,8 @@
                     </div>
                     <div class="person-detail-body">
                         ${bodyHtml}
+                        ${detailsHtml}
+                        ${notesHtml}
                         ${imageIdHtml}
                     </div>
                     ${saveBarHtml}
@@ -3300,20 +3369,46 @@
         }
         
         async function savePersonFromDetail(personId) {
-            if (!canEdit()) { alert('You must be signed in to edit.'); return; }
+            // Viewers can save limited fields; editors can save all
+            const isViewer = currentUser && userRole === 'viewer';
+            if (!canEdit() && !isViewer) {
+                if (!currentUser) { openAuthModal(); return; }
+                alert('You do not have permission to save changes.');
+                return;
+            }
             
             const person = personMap[personId];
             if (!person) return;
             
             const oldData = { ...person };
             
-            person.name = document.getElementById('pdEditName').value.trim();
-            person.sex = document.getElementById('pdEditSex').value;
-            person.born = document.getElementById('pdEditBorn').value.trim();
-            person.until = document.getElementById('pdEditUntil').value.trim();
-            person.imageId = document.getElementById('pdEditImageId').value.trim();
-            person.marriageDate = document.getElementById('pdEditMarriageDate').value.trim();
-            person.separationDate = document.getElementById('pdEditSeparationDate').value.trim();
+            // Fields that viewers CAN edit
+            const nameField = document.getElementById('pdEditName');
+            if (nameField) person.name = nameField.value.trim();
+            
+            const imageIdField = document.getElementById('pdEditImageId');
+            if (imageIdField) person.imageId = imageIdField.value.trim();
+            
+            const notesField = document.getElementById('pdEditNotes');
+            if (notesField) person.notes = notesField.value.trim();
+            
+            // Fields only editors can change
+            if (canEdit()) {
+                const sexField = document.getElementById('pdEditSex');
+                if (sexField) person.sex = sexField.value;
+                
+                const bornField = document.getElementById('pdEditBorn');
+                if (bornField) person.born = bornField.value.trim();
+                
+                const untilField = document.getElementById('pdEditUntil');
+                if (untilField) person.until = untilField.value.trim();
+                
+                const marriageField = document.getElementById('pdEditMarriageDate');
+                if (marriageField) person.marriageDate = marriageField.value.trim();
+                
+                const sepField = document.getElementById('pdEditSeparationDate');
+                if (sepField) person.separationDate = sepField.value.trim();
+            }
             
             if (canChangeLinks()) {
                 const oldSpouseId = person.spouseId;
@@ -3329,7 +3424,6 @@
                     const newSpouse = personMap[person.spouseId];
                     if (newSpouse) {
                         newSpouse.spouseId = personId;
-                        // Copy marriage dates to spouse too
                         newSpouse.marriageDate = person.marriageDate;
                         newSpouse.separationDate = person.separationDate;
                         try { await savePersonToFirebase(newSpouse); } catch(e) {}
@@ -3341,7 +3435,7 @@
             
             try {
                 await savePersonToFirebase(person);
-                await logChange('edit', personId, oldData, { ...person }, `Edited ${person.name}`);
+                await logChange('edit', personId, oldData, { ...person }, `Edited ${person.name}${isViewer ? ' (viewer)' : ''}`);
             } catch (error) {
                 console.error('Error saving:', error);
             }
@@ -3350,6 +3444,23 @@
             refreshPeopleList();
             renderTree();
             showPersonDetail(personMap[personId]); // Back to view mode
+        }
+        
+        async function requestEditorAccess() {
+            if (!currentUser) return;
+            
+            try {
+                // Record the request in the user's Firestore doc
+                const { doc, updateDoc, serverTimestamp } = window.firebaseModules;
+                await updateDoc(doc(window.firebaseDB, 'authorized_users', currentUser.email.toLowerCase()), {
+                    accessRequestedAt: serverTimestamp(),
+                    accessRequestNote: 'Requested editor permissions'
+                });
+            } catch (e) {
+                // Non-critical
+            }
+            
+            alert('To get full editing permissions, please message the person who shared this family tree link with you and ask them to upgrade your access from the Admin Panel.');
         }
         
         async function deletePersonFromDetail(personId) {
@@ -3639,7 +3750,7 @@
         }
         
         async function addRelativeFromDetail(personId, relationship) {
-            if (!canEdit()) { alert('You must be signed in to add people.'); return; }
+            if (requireEditAuth()) return;
             
             const person = personMap[personId];
             if (!person) return;
@@ -3696,10 +3807,7 @@
             const person = personMap[personId];
             if (!person) return;
             
-            if (!canEdit()) {
-                alert('You must be signed in as an editor to make changes.');
-                return;
-            }
+            if (requireEditAuth()) return;
             
             // Re-open the same modal in edit mode
             showPersonDetail(person, true);
@@ -4936,10 +5044,7 @@ return `
         }
         
         async function addPerson() {
-            if (!canEdit()) {
-                alert('You must be signed in as an editor to add people.');
-                return;
-            }
+            if (requireEditAuth()) return;
             
             const name = document.getElementById('addName').value.trim();
             const sex = document.getElementById('addSex').value;
@@ -5014,10 +5119,7 @@ return `
         }
         
         async function savePerson() {
-            if (!canEdit()) {
-                alert('You must be signed in as an editor to save changes.');
-                return;
-            }
+            if (requireEditAuth()) return;
             
             const id = parseInt(document.getElementById('editId').value);
             const person = personMap[id];
@@ -6065,6 +6167,19 @@ return `
     // ===== ROLE HELPERS =====
     function canDelete() { return userRole === 'superadmin' || userRole === 'admin'; }
     function canEdit() { return userRole === 'superadmin' || userRole === 'admin' || userRole === 'editor'; }
+    
+    // Helper: if not signed in or not authorized to edit, open login modal and return true (meaning "blocked")
+    function requireEditAuth() {
+        if (canEdit()) return false; // Not blocked
+        if (!currentUser) {
+            // Not signed in at all — open login
+            openAuthModal();
+        } else {
+            // Signed in but role is viewer — tell them to contact admin
+            alert('Your current role (' + (userRole || 'viewer') + ') does not have edit permissions. Contact an admin to be upgraded.');
+        }
+        return true; // Blocked
+    }
     function canChangeLinks() { return userRole === 'superadmin' || userRole === 'admin'; }
     function canManageUsers() { return userRole === 'superadmin' || userRole === 'admin'; }
     function isSuperAdmin() { return userRole === 'superadmin'; }
@@ -6089,10 +6204,18 @@ return `
                 await loadUserRole(user.email);
                 
                 if (!userRole) {
-                    alert(`${user.email} is not authorized. Contact the administrator to request access.`);
-                    const { signOut } = window.firebaseModules;
-                    signOut(window.firebaseAuth);
-                    return;
+                    // Auto-register as viewer (anyone can sign in and view)
+                    userRole = 'viewer';
+                    await ensureUserInFirestore(user.email, 'viewer', 'Auto-registered on first sign-in');
+                }
+                
+                // Track visit: increment viewCount and update lastSeen
+                await trackUserVisit(user.email);
+                
+                // Apply user's default tree to launch screen
+                const launchInput = document.getElementById('launchInput');
+                if (launchInput && _userDefaultTree) {
+                    launchInput.value = _userDefaultTree;
                 }
             } else {
                 userRole = null;
@@ -6144,10 +6267,37 @@ return `
                 notes: notes || '',
                 addedBy: currentUser ? currentUser.email : 'system',
                 addedAt: serverTimestamp(),
-                active: true
+                active: true,
+                viewCount: 0,
+                defaultTree: '80'
             }, { merge: true });
         } catch (error) {
             console.error('Error ensuring user in Firestore:', error);
+        }
+    }
+    
+    // Track each visit: increment viewCount, update lastSeen, load defaultTree
+    let _userDefaultTree = '80';
+    async function trackUserVisit(email) {
+        try {
+            const { doc, getDoc, updateDoc, serverTimestamp } = window.firebaseModules;
+            const userRef = doc(window.firebaseDB, 'authorized_users', email.toLowerCase());
+            const snap = await getDoc(userRef);
+            
+            if (snap.exists()) {
+                const data = snap.data();
+                const currentCount = data.viewCount || 0;
+                await updateDoc(userRef, {
+                    viewCount: currentCount + 1,
+                    lastSeen: serverTimestamp(),
+                    displayName: currentUser ? (currentUser.displayName || '') : ''
+                });
+                // Load user's default tree
+                _userDefaultTree = data.defaultTree || '80';
+            }
+        } catch (error) {
+            // Non-critical — don't block the app
+            console.warn('Could not track visit:', error.message || error);
         }
     }
     
@@ -6416,7 +6566,7 @@ return `
     
     // ===== FIREBASE DATA OPERATIONS =====
     async function savePersonToFirebase(person) {
-        if (!canEdit()) return;
+        if (!canEdit() && userRole !== 'viewer') return;
         try {
             const { doc, setDoc } = window.firebaseModules;
             const personRef = doc(window.firebaseDB, 'people', `person_${person.id}`);
@@ -6468,10 +6618,7 @@ return `
     }
     
     async function saveAllToFirebase() {
-        if (!canEdit()) {
-            alert('You must be signed in as an editor to save data.');
-            return;
-        }
+        if (requireEditAuth()) return;
         
         try {
             const { doc, setDoc } = window.firebaseModules;
@@ -6498,20 +6645,24 @@ return `
         const authEmailDisplay = document.getElementById('authEmail');
         const adminBtn = document.getElementById('adminPanelBtn');
         const authRoleDisplay = document.getElementById('authRole');
+        const dmBtn = document.getElementById('dataManagerBtn');
         
         if (userRole && currentUser) {
             authStatus.style.display = 'block';
             authBtn.style.display = 'none';
             if (authEmailDisplay) authEmailDisplay.textContent = currentUser.email;
             if (authRoleDisplay) {
-                const roleLabels = { superadmin: 'Super Admin', admin: 'Admin', editor: 'Editor' };
+                const roleLabels = { superadmin: 'Super Admin', admin: 'Admin', editor: 'Editor', viewer: 'Viewer' };
                 authRoleDisplay.textContent = roleLabels[userRole] || userRole;
             }
             if (adminBtn) adminBtn.style.display = canManageUsers() ? 'block' : 'none';
+            // Data Manager: admins only
+            if (dmBtn) dmBtn.style.display = canManageUsers() ? 'block' : 'none';
         } else {
             authStatus.style.display = 'none';
             authBtn.style.display = 'block';
             if (adminBtn) adminBtn.style.display = 'none';
+            if (dmBtn) dmBtn.style.display = 'none';
         }
         
         // Update Data Manager button visibility based on permissions
@@ -6622,41 +6773,74 @@ return `
         const users = await loadAuthorizedUsers();
         
         if (users.length === 0) {
-            container.innerHTML = '<div style="color: var(--parchment); padding: 20px; text-align: center; opacity: 0.7;">No users found. The bootstrap admin will be auto-created on first sign-in.</div>';
+            container.innerHTML = '<div style="color: var(--parchment); padding: 20px; text-align: center; opacity: 0.7;">No users found.</div>';
             return;
         }
         
+        // Sort: admins first, then by view count desc
+        const rolePriority = { superadmin: 0, admin: 1, editor: 2, viewer: 3 };
+        users.sort((a, b) => (rolePriority[a.role] || 9) - (rolePriority[b.role] || 9) || (b.viewCount || 0) - (a.viewCount || 0));
+        
+        const treeOptions = ['80', 'kochi', 'ayalur', 'avr', 'radha'];
+        
         let html = '';
         users.forEach(u => {
-            const roleLabels = { superadmin: 'Super Admin', admin: 'Admin', editor: 'Editor' };
-            const roleLabel = roleLabels[u.role] || u.role;
+            const roleLabels = { superadmin: 'Super Admin', admin: 'Admin', editor: 'Editor', viewer: 'Viewer' };
+            const roleLabel = roleLabels[u.role] || u.role || 'viewer';
             const isSelf = currentUser && u.email === currentUser.email.toLowerCase();
             const isProtected = u.email === 'venki.ayalur@gmail.com';
+            const viewCount = u.viewCount || 0;
+            const lastSeen = u.lastSeen ? new Date(u.lastSeen.seconds * 1000).toLocaleDateString() : 'Never';
+            const displayName = u.displayName || '';
+            const defaultTree = u.defaultTree || '80';
+            const hasAccessRequest = u.accessRequestedAt && u.role === 'viewer';
             
             let roleSelector = '';
             if (!isProtected && !isSelf && canManageUsers()) {
-                const options = isSuperAdmin() 
-                    ? '<option value="admin">Admin</option><option value="editor">Editor</option>'
-                    : '<option value="editor">Editor</option>';
-                roleSelector = `<select onchange="updateUserRole('${u.email}', this.value)" style="background: var(--bark-700); color: var(--parchment); border: 1px solid var(--gold-500); border-radius: 4px; padding: 4px 8px; font-size: 12px;">
-                    <option value="${u.role}" selected>${roleLabel}</option>
-                    ${options}
+                const allRoles = isSuperAdmin() 
+                    ? ['admin', 'editor', 'viewer']
+                    : ['editor', 'viewer'];
+                const opts = allRoles.map(r => `<option value="${r}" ${r === u.role ? 'selected' : ''}>${roleLabels[r]}</option>`).join('');
+                roleSelector = `<select onchange="updateUserRole('${u.email}', this.value)" style="background: var(--bark-700); color: var(--parchment); border: 1px solid var(--gold-500); border-radius: 4px; padding: 3px 6px; font-size: 11px;">
+                    ${u.role === 'superadmin' ? `<option value="superadmin" selected>Super Admin</option>` : ''}
+                    ${opts}
                 </select>`;
             } else {
-                roleSelector = `<span style="color: var(--gold-400); font-size: 13px;">${roleLabel}</span>`;
+                roleSelector = `<span style="color: var(--gold-400); font-size: 12px; font-weight: 600;">${roleLabel}</span>`;
+            }
+            
+            // Default tree selector (admins only)
+            let treeSelector = '';
+            if (canManageUsers()) {
+                const treeOpts = treeOptions.map(t => `<option value="${t}" ${t === defaultTree ? 'selected' : ''}>${t}</option>`).join('');
+                treeSelector = `<select onchange="updateUserDefaultTree('${u.email}', this.value)" style="background: var(--bark-700); color: var(--parchment); border: 1px solid rgba(212,175,55,0.3); border-radius: 4px; padding: 3px 6px; font-size: 11px; width: 70px;">
+                    ${treeOpts}
+                </select>`;
+            } else {
+                treeSelector = `<span style="opacity: 0.5; font-size: 11px;">${defaultTree}</span>`;
             }
             
             const removeBtn = (!isProtected && !isSelf && canManageUsers()) 
-                ? `<button onclick="confirmRemoveUser('${u.email}')" style="background: rgba(255,107,157,0.2); border: 1px solid var(--rose-500); color: var(--rose-400); border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 12px;">Remove</button>`
+                ? `<button onclick="confirmRemoveUser('${u.email}')" style="background: rgba(255,107,157,0.15); border: 1px solid var(--rose-500); color: var(--rose-400); border-radius: 4px; padding: 2px 8px; cursor: pointer; font-size: 11px;">X</button>`
                 : '';
             
-            html += `<div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: rgba(248,246,240,0.04); border-radius: 8px; margin-bottom: 8px;">
-                <div style="flex: 1;">
-                    <div style="color: var(--parchment); font-weight: 500;">${u.email}${isSelf ? ' <span style="color: var(--gold-400); font-size: 11px;">(you)</span>' : ''}</div>
+            html += `<div style="padding: 10px; background: rgba(248,246,240,0.04); border-radius: 8px; margin-bottom: 6px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="color: var(--parchment); font-weight: 500; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                            ${displayName ? displayName + ' ' : ''}${isSelf ? '<span style="color: var(--gold-400); font-size: 10px;">(you)</span>' : ''}${hasAccessRequest ? ' <span style="background: var(--gold-500); color: var(--bark-900); font-size: 9px; padding: 1px 5px; border-radius: 3px; font-weight: 700;">ACCESS REQUESTED</span>' : ''}
+                        </div>
+                        <div style="color: var(--parchment); opacity: 0.5; font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${u.email}</div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
+                        ${roleSelector}
+                        ${removeBtn}
+                    </div>
                 </div>
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    ${roleSelector}
-                    ${removeBtn}
+                <div style="display: flex; gap: 12px; margin-top: 6px; font-size: 11px; color: var(--parchment); opacity: 0.5;">
+                    <span>Views: <strong style="color: var(--gold-400); opacity: 1;">${viewCount}</strong></span>
+                    <span>Last: ${lastSeen}</span>
+                    <span>Tree: ${treeSelector}</span>
                 </div>
             </div>`;
         });
@@ -6690,6 +6874,18 @@ return `
                 alert(`${email} removed.`);
                 await loadAdminUsersTab();
             }
+        }
+    }
+    
+    async function updateUserDefaultTree(email, tree) {
+        try {
+            const { doc, updateDoc } = window.firebaseModules;
+            await updateDoc(doc(window.firebaseDB, 'authorized_users', email.toLowerCase()), {
+                defaultTree: tree
+            });
+        } catch (error) {
+            console.error('Error updating default tree:', error);
+            alert('Failed to update default tree.');
         }
     }
     
@@ -7206,13 +7402,15 @@ return `
                             <input type="email" id="newUserEmail" placeholder="email@gmail.com" 
                                 style="flex: 1; min-width: 200px; padding: 8px 12px; background: var(--bark-700); border: 1px solid var(--gold-500); border-radius: 6px; color: var(--parchment); font-size: 14px;">
                             <select id="newUserRole" style="padding: 8px 12px; background: var(--bark-700); border: 1px solid var(--gold-500); border-radius: 6px; color: var(--parchment); font-size: 14px;">
+                                <option value="viewer">Viewer</option>
                                 <option value="editor">Editor</option>
                                 <option value="admin">Admin</option>
                             </select>
                             <button onclick="handleAddUser()" style="padding: 8px 16px; background: var(--gold-500); color: var(--bark-900); border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Add</button>
                         </div>
                         <div style="color: var(--parchment); opacity: 0.5; font-size: 12px; margin-top: 8px;">
-                            <strong>Roles:</strong> Super Admin (full control) • Admin (CRUD + manage users) • Editor (add/edit people, no delete or link changes)
+                            <strong>Roles:</strong> Super Admin (full control) · Admin (CRUD + manage users) · Editor (add/edit people) · Viewer (view only)
+                            <br>New sign-ins are auto-registered as Viewers. Promote them here.
                         </div>
                     </div>
                     <div id="adminUsersList"></div>
